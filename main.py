@@ -7,25 +7,23 @@ import json
 import behaviours
 
 
-STATE_PATH = "state.json"
-
-
 class MyClient(object):
-    def __init__(self, bot):
+    def __init__(self, bot, state_path):
         self.bot = bot
         self.behaviours = behaviours.build_behaviours()
 
         self.state = {}
+        self._state_path = state_path
 
     def _load_state(self):
         try:
-            with open(STATE_PATH, 'r') as fp:
+            with open(self._state_path, 'r') as fp:
                 self.state = json.load(fp)
         except FileNotFoundError:
             self.state = {}
 
     def _save_state(self):
-        with open(STATE_PATH, 'w') as fp:
+        with open(self._state_path, 'w') as fp:
             json.dump(self.state, fp)
 
     async def on_ready(self):
@@ -128,7 +126,7 @@ def main():
     token = args.token_file.read().strip()
 
     my_bot = discord.Client()
-    my_client = MyClient(my_bot)
+    my_client = MyClient(my_bot, args.state)
 
     my_bot.on_ready = my_client.on_ready
     my_bot.on_resumed = my_client.on_resumed
@@ -150,6 +148,10 @@ def get_args():
     parser.add_argument(
         'token_file', type=argparse.FileType('r'),
         help='path to file containing discord API token for bot to authenticate with'
+    )
+    parser.add_argument(
+        '-s', '--state', type=str, default="./state.json",
+        help='path to file to read/write persistent state to/from'
     )
     return parser.parse_args()
 
