@@ -9,6 +9,10 @@ from . import base_behaviour
 
 class Behaviour(base_behaviour.Behaviour):
 
+    def __init__(self):
+        super().__init__()
+        self.allowed_channels = ["bot-shennanigans"]
+
     async def on_command(self, client, original_msg, relevant_content):
         author = original_msg.author
         words = relevant_content.split()

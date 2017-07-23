@@ -2,6 +2,15 @@
 
 class Behaviour(object):
 
+    def __init__(self):
+        self.allowed_channels = None
+
+    def allowed_in_channel(self, channel):
+        allowed = True
+        if self.allowed_channels is not None:
+            allowed = channel.is_private or channel.name in self.allowed_channels
+        return allowed
+
     async def on_ready(self, client):
         pass
 

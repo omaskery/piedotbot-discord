@@ -51,8 +51,9 @@ class MyClient(object):
 
     async def on_message(self, message):
         for behaviour in self.behaviours:
-            self.bot.loop.create_task(behaviour.on_raw_message(self, message))
-            self._save_state()
+            if behaviour.allowed_in_channel(message.channel):
+                self.bot.loop.create_task(behaviour.on_raw_message(self, message))
+                self._save_state()
 
         activation_phrases = [self.bot.user.mention, "!", self.bot.user.name]
 
@@ -79,8 +80,9 @@ class MyClient(object):
             return
 
         for behaviour in self.behaviours:
-            self.bot.loop.create_task(behaviour.on_command(self, message, relevant_content))
-            self._save_state()
+            if behaviour.allowed_in_channel(message.channel):
+                self.bot.loop.create_task(behaviour.on_command(self, message, relevant_content))
+                self._save_state()
 
     async def on_message_delete(self, message):
         print("message deleted:", message)
