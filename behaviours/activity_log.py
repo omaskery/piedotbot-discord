@@ -30,12 +30,11 @@ class Behaviour(base_behaviour.Behaviour):
         if len(changes) < 1:
             return
 
-        message = "[{}] {} {}".format(
-            datetime.datetime.utcnow().strftime("%H:%M:%S.%f"),
+        message = "{} {}".format(
             before.name,
             ", ".join(changes)
         )
-        await client.bot.send_message(log_channel, message)
+        await client.bot.send_message(log_channel, message, tts=True)
 
     def _find_log_channel(self, server):
         for channel in server.channels:
