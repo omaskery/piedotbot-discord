@@ -13,6 +13,7 @@ class MyClient(object):
         self.behaviours = behaviours.build_behaviours()
 
         self.state = {}
+        self.exit = False
         self._state_path = state_path
 
     def _load_state(self):
@@ -140,7 +141,12 @@ def main():
     my_bot.on_reaction_remove = my_client.on_reaction_remove
     my_bot.on_voice_state_update = my_client.on_voice_state_update
 
-    my_bot.run(token)
+    first = True
+    while not my_client.exit:
+        if not first:
+            print("re-running client because it didn't actually ask to exit?")
+        first = False
+        my_bot.run(token)
 
 
 def get_args():
