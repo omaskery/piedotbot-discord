@@ -1,6 +1,8 @@
 import argparse
 import discord
 import signal
+import sys
+import os
 
 from piedotbot.client import MyClient
 
@@ -8,7 +10,13 @@ from piedotbot.client import MyClient
 def main():
     args = get_args()
 
-    token = args.token_file.read().strip()
+    if args.token_file is not None:
+        token = args.token_file.read().strip()
+    elif "BOT_TOKEN" in os.environ:
+        token = os.environ.get("BOT_TOKEN", None)
+    else:
+        print("no bot token provided")
+        sys.exit(-1)
 
     my_bot = discord.Client()
     my_client = MyClient(my_bot, args.state)
@@ -38,7 +46,7 @@ def get_args():
         description="silly experiment into discord bot implementation"
     )
     parser.add_argument(
-        'token_file', type=argparse.FileType('r'),
+        '--token_file', type=argparse.FileType('r'), default=None,
         help='path to file containing discord API token for bot to authenticate with'
     )
     parser.add_argument(
