@@ -6,6 +6,7 @@ from . import base_behaviour
 
 
 RollDescription = namedtuple("RollDescription", "dice sides")
+RollResult = namedtuple("RollResult", "rolls total average")
 
 
 class Behaviour(base_behaviour.Behaviour):
@@ -28,17 +29,17 @@ class Behaviour(base_behaviour.Behaviour):
             await client.bot.send_message(original_msg.channel, f'{author.mention} no')
             return
 
-        total = 0
-        rolls = []
-        for index in range(roll.dice):
-            roll_result = random.randint(1, roll.sides)
-            if roll.dice <= max_rolls:
-                rolls.append(roll_result)
-            total += roll_result
+        result = self.perform_rolls(roll)
 
-        average = total / roll.dice
-        msg = f'{author.mention} rolled {rolls} for a total of {total} and average of {average}'
+        msg = f'{author.mention} rolled {result.rolls} for a total of {result.total} and average of {result.average}'
         await client.bot.send_message(original_msg.channel, msg)
+
+    @staticmethod
+    def perform_rolls(roll):
+        rolls = [random.randint(1, roll.sides) for _ in range(roll.dice)]
+        total = sum(rolls)
+        average = total / roll.dice
+        return RollResult(rolls, total, average)
 
     @staticmethod
     def parse_command(relevant_content):
