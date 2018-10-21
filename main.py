@@ -19,7 +19,7 @@ def main():
         sys.exit(-1)
 
     my_bot = discord.Client()
-    my_client = MyClient(my_bot, args.state)
+    my_client = MyClient(my_bot)
 
     my_bot.on_ready = my_client.on_ready
     my_bot.on_resumed = my_client.on_resumed
@@ -48,10 +48,6 @@ def get_args():
     parser.add_argument(
         '--token_file', type=argparse.FileType('r'), default=None,
         help='path to file containing discord API token for bot to authenticate with'
-    )
-    parser.add_argument(
-        '-s', '--state', type=str, default="./state.json",
-        help='path to file to read/write persistent state to/from'
     )
     return parser.parse_args()
 

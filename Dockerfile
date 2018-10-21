@@ -5,4 +5,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /src/
 
-CMD [ "python", "-u", "./src/main.py", "/srv/token.dat", "-s", "/srv/state.json" ]
+CMD [ "python", "-u", "./src/main.py", "/srv/token.dat" ]
