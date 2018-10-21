@@ -33,7 +33,8 @@ class Behaviour(base_behaviour.Behaviour):
         )
         await client.bot.send_message(log_channel, message, tts=True)
 
-    def _find_log_channel(self, server):
+    @staticmethod
+    def _find_log_channel(server):
         for channel in server.channels:
             if channel.name == "activity_log":
                 return channel
