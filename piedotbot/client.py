@@ -29,7 +29,7 @@ class MyClient(object):
         print(f"  activation phrase: {self.bot.user.mention}")
 
         print(f"connecting to database [{self.db_url}]...")
-        await self.db.set_bind(self.db_url, ssl=True)
+        await self.db.set_bind(self.db_url)
         print("connected to database :)")
 
         for behaviour in self.behaviours:
