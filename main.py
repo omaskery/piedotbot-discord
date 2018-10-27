@@ -18,8 +18,10 @@ def main():
         print("no bot token provided")
         sys.exit(-1)
 
+    db_url = os.environ.get("DATABASE_URL")
+
     my_bot = discord.Client()
-    my_client = MyClient(my_bot)
+    my_client = MyClient(my_bot, db_url)
 
     my_bot.on_ready = my_client.on_ready
     my_bot.on_resumed = my_client.on_resumed

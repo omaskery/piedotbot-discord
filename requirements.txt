@@ -1,1 +1,2 @@
 discord.py>=0.16.8
+gino>=0.8.0

@@ -4,13 +4,16 @@ import asyncio
 import string
 
 
+from . import persistence
 from . import behaviours
 
 
 class MyClient(object):
-    def __init__(self, bot):
+    def __init__(self, bot, db_url):
         self.bot = bot
         self.behaviours = behaviours.build_behaviours()
+        self.db_url = db_url
+        self.db = persistence.db
 
         self.state = {}
         self.exit = False
@@ -22,8 +25,12 @@ class MyClient(object):
         loop.create_task(self.bot.logout())
 
     async def on_ready(self):
-        print("client logged in as {bot.user.name} with ID {bot.user.id}".format(bot=self.bot))
-        print("  activation phrase: {}".format(self.bot.user.mention))
+        print(f"client logged in as {self.bot.user.name} with ID {self.bot.user.id}")
+        print(f"  activation phrase: {self.bot.user.mention}")
+
+        print("connecting to database [{self.db_url}]...")
+        await self.db.set_bind(self.db_url, ssl=True)
+        print("connected to database :)")
 
         for behaviour in self.behaviours:
             await behaviour.on_ready(self)
