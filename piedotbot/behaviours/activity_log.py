@@ -1,3 +1,4 @@
+from piedotbot.name_util import display_user_display_names
 from . import base_behaviour
 
 
@@ -28,10 +29,13 @@ class Behaviour(base_behaviour.Behaviour):
         elif after_channel_name is not None:
             changes.append(f"joined voice channel {after_channel_name}")
 
+        if before.display_name != after.display_name:
+            changes.append(f"changed display name from {before.display_name}")
+
         if len(changes) < 1:
             return
 
-        message = f"{before.name} {', '.join(changes)}"
+        message = f"{display_user_display_names(after)} {', '.join(changes)}"
         await client.bot.send_message(log_channel, message, tts=True)
 
     @staticmethod
