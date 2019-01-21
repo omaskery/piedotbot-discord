@@ -80,33 +80,33 @@ class MyClient(object):
                 self.bot.loop.create_task(behaviour.on_command(self, message, relevant_content))
 
     async def on_message_delete(self, message):
-        print(f"message deleted: {message!r}")
+        print(f"message deleted: [{message.author}] {message.content}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_message_delete(self, message))
 
     async def on_message_edit(self, before, after):
-        print("message edited")
-        print(f"  before: {before!r}")
-        print(f"  after: {after!r}")
+        print("message edited:")
+        print(f"  before: [{before.author}] {before.content}")
+        print(f"  after:  [{after.author}] {after.content}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_message_edit(self, before, after))
 
     async def on_reaction_add(self, reaction, user):
-        print(f"reaction added '{reaction!r}' by {user!r}")
+        print(f"reaction added '{reaction.emoji.name}' by {user.name}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_add(self, reaction, user))
 
     async def on_reaction_remove(self, reaction, user):
-        print(f"reaction removed '{reaction!r}' by {user!r}")
+        print(f"reaction removed '{reaction.emoji.name}' by {user.name}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_remove(self, reaction, user))
 
     async def on_voice_state_update(self, before, after):
-        print(f"voice state changed {before!r} -> {after!r}")
+        print(f"voice state changed on user {after.name}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_voice_state_update(self, before, after))
