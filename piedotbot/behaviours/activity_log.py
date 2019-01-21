@@ -21,7 +21,8 @@ class Behaviour(base_behaviour.Behaviour):
         before_channel_name = extract_channel_name(before)
         after_channel_name = extract_channel_name(after)
         if before_channel_name is not None and after_channel_name is not None:
-            changes.append(f"switched voice channel from {before_channel_name} to {after_channel_name}")
+            if before_channel_name != after_channel_name:
+                changes.append(f"switched voice channel from {before_channel_name} to {after_channel_name}")
         elif before_channel_name is not None:
             changes.append(f"left voice channel {before_channel_name}")
         elif after_channel_name is not None:
