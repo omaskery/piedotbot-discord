@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import discord
 import signal
 import sys
@@ -23,7 +24,8 @@ def main():
     db_url = os.environ.get("DATABASE_URL")
 
     print("constructing bot")
-    my_bot = discord.Client()
+    loop = asyncio.get_event_loop()
+    my_bot = discord.Client(loop=loop)
     my_client = MyClient(my_bot, db_url)
 
     my_bot.on_ready = my_client.on_ready
@@ -40,8 +42,12 @@ def main():
     signal.signal(signal.SIGTERM, lambda *a: my_client.stop())
 
     while not my_client.exit:
-        print("running bot")
-        my_bot.run(token)
+        try:
+            print("running bot")
+            my_bot.loop.run_until_complete(my_bot.start(token))
+        except KeyboardInterrupt:
+            print("keyboard interrupt")
+            loop.run_until_complete(my_bot.logout())
 
     print("exiting main")
 
