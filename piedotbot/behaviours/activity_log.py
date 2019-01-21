@@ -13,8 +13,13 @@ class Behaviour(base_behaviour.Behaviour):
         if before.status != after.status:
             changes.append(f"changed status from {before.status} to {after.status}")
 
-        before_channel_name = before.voice.voice_channel.name if before.voice.voice_channel else None
-        after_channel_name = after.voice.voice_channel.name if after.voice.voice_chanel else None
+        def extract_channel_name(state):
+            if state.voice.voice_channel is not None:
+                return state.voice.voice_channel.name
+            return None
+
+        before_channel_name = extract_channel_name(before)
+        after_channel_name = extract_channel_name(after)
         if before_channel_name is not None and after_channel_name is not None:
             changes.append(f"switched voice channel from {before_channel_name} to {after_channel_name}")
         elif before_channel_name is not None:
