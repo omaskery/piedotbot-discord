@@ -8,7 +8,7 @@ class TestDiceRolling(unittest.TestCase):
         for dice_count in [4, 8, 20]:
             for dice_sides in [2, 3, 5, 6, 10, 20]:
                 with self.subTest("specific dice count and side count", dice_count=dice_count, dice_sides=dice_sides):
-                    roll_info = dice_roll.RollDescription(dice=dice_count, sides=dice_sides)
+                    roll_info = dice_roll.RollDescription(dice=dice_count, sides=dice_sides, addition=None)
 
                     result = dice_roll.Behaviour.perform_rolls(roll_info)
 
@@ -21,10 +21,13 @@ class TestDiceRolling(unittest.TestCase):
 
     def test_roll_specifier_parsing(self):
         cases = [
-            ("roll 1d4", (1, 4)),
-            ("roll 2d10", (2, 10)),
-            ("roll 16d3", (16, 3)),
-            ("ROLL 16d3", (16, 3)),  # should be case insensitive
+            ("roll 1d4", (1, 4, None)),
+            ("roll 2d10", (2, 10, None)),
+            ("roll 16d3", (16, 3, None)),
+            ("ROLL 16d3", (16, 3, None)),  # should be case insensitive
+            ("roll 2d20+8", (2, 20, 8)),
+            ("roll 2d20-8", (2, 20, -8)),
+            ("roll 16d3+20", (16, 3, 20)),
             ("roll", None),  # must have a specifier
             ("rull 16d3", None),  # first word must be "roll"
             ("", None),  # must have 2 words

@@ -5,8 +5,8 @@ import re
 from . import base_behaviour
 
 
-RollDescription = namedtuple("RollDescription", "dice sides")
-RollResult = namedtuple("RollResult", "rolls total average")
+RollDescription = namedtuple("RollDescription", "dice sides addition")
+RollResult = namedtuple("RollResult", "rolls total average addition")
 
 
 class Behaviour(base_behaviour.Behaviour):
@@ -31,15 +31,21 @@ class Behaviour(base_behaviour.Behaviour):
 
         result = self.perform_rolls(roll)
 
-        msg = f'{author.mention} rolled {result.rolls} for a total of {result.total} and average of {result.average}'
+        def with_addition(value):
+            result_str = str(value)
+            if result.addition is not None:
+                result_str += f" (with {result.addition:+}: {value + result.addition})"
+            return result_str
+
+        msg = f'{author.mention} rolled {result.rolls} for a total of {with_addition(result.total)} and average of {with_addition(result.average)}'
         await client.bot.send_message(original_msg.channel, msg)
 
     @staticmethod
-    def perform_rolls(roll):
+    def perform_rolls(roll: RollDescription):
         rolls = [random.randint(1, roll.sides) for _ in range(roll.dice)]
         total = sum(rolls)
         average = total / roll.dice
-        return RollResult(rolls, total, average)
+        return RollResult(rolls, total, average, roll.addition)
 
     @staticmethod
     def parse_command(relevant_content):
@@ -47,11 +53,12 @@ class Behaviour(base_behaviour.Behaviour):
         if len(words) != 2 or words[0].lower() != 'roll':
             return None
 
-        pattern = re.compile(r'(\d+)d(\d+)')
+        pattern = re.compile(r'(\d+)d(\d+)([+-]\d+)?')
         match = pattern.fullmatch(words[1])
         if match is None:
             return None
 
         dice, sides = int(match.group(1)), int(match.group(2))
+        addition = int(match.group(3)) if match.group(3) is not None else None
 
-        return RollDescription(dice, sides)
+        return RollDescription(dice, sides, addition)
