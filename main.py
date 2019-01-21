@@ -8,6 +8,8 @@ from piedotbot.client import MyClient
 
 
 def main():
+    print("entering main")
+
     args = get_args()
 
     if args.token_file is not None:
@@ -20,6 +22,7 @@ def main():
 
     db_url = os.environ.get("DATABASE_URL")
 
+    print("constructing bot")
     my_bot = discord.Client()
     my_client = MyClient(my_bot, db_url)
 
@@ -33,14 +36,14 @@ def main():
     my_bot.on_reaction_remove = my_client.on_reaction_remove
     my_bot.on_voice_state_update = my_client.on_voice_state_update
 
+    print("registering signal handler")
     signal.signal(signal.SIGTERM, lambda *a: my_client.stop())
 
-    first = True
     while not my_client.exit:
-        if not first:
-            print("re-running client because it didn't actually ask to exit?")
-        first = False
+        print("running bot")
         my_bot.run(token)
+
+    print("exiting main")
 
 
 def get_args():

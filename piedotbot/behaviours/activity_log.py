@@ -9,28 +9,23 @@ class Behaviour(base_behaviour.Behaviour):
             return
 
         changes = []
+
         if before.status != after.status:
-            changes.append("changed status from {} to {}".format(before.status, after.status))
-        if before.voice.voice_channel is not None and after.voice.voice_channel is None:
-            changes.append("left voice channel {}".format(before.voice.voice_channel.name))
-        if before.voice.voice_channel is None and after.voice.voice_channel is not None:
-            changes.append("joined voice channel {}".format(after.voice.voice_channel.name))
-        if before.voice.voice_channel is not None and after.voice.voice_channel is not None and\
-                before.voice.voice_channel.name != after.voice.voice_channel.name:
-            changes.append("switched voice channel from {} to {}".format(
-                before.voice.voice_channel.name,
-                after.voice.voice_channel.name
-            ))
-        if before.status != after.status:
-            changes.append("changed status from {} to {}".format(before.status, after.status))
+            changes.append(f"changed status from {before.status} to {after.status}")
+
+        before_channel_name = before.voice.voice_channel.name if before.voice.voice_channel else None
+        after_channel_name = after.voice.voice_channel.name if after.voice.voice_chanel else None
+        if before_channel_name is not None and after_channel_name is not None:
+            changes.append(f"switched voice channel from {before_channel_name} to {after_channel_name}")
+        elif before_channel_name is not None:
+            changes.append(f"left voice channel {before_channel_name}")
+        elif after_channel_name is not None:
+            changes.append(f"joined voice channel {after_channel_name}")
 
         if len(changes) < 1:
             return
 
-        message = "{} {}".format(
-            before.name,
-            ", ".join(changes)
-        )
+        message = f"{before.name} {', '.join(changes)}"
         await client.bot.send_message(log_channel, message, tts=True)
 
     @staticmethod

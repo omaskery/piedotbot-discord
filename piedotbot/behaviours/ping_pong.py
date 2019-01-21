@@ -10,11 +10,17 @@ class Behaviour(base_behaviour.Behaviour):
     async def on_command(self, client, original_msg, relevant_content):
         words = relevant_content.split()
         if len(words) > 0:
-            if words[0].lower() == 'ping':
-                await client.bot.send_message(original_msg.channel, "{}: pong!".format(original_msg.author.mention))
-            elif words[0].lower() == 'pong':
-                await client.bot.send_message(original_msg.channel, "{}: ...ping?".format(original_msg.author.mention))
-            elif words[0].lower().startswith("ping") or words[0].lower().startswith("pong"):
-                await client.bot.send_message(original_msg.channel, "{}, now you're just being silly.".format(
-                    original_msg.author.mention
-                ))
+            author = original_msg.author.mention
+
+            response = None
+
+            first_word = words[0].lower()
+            if first_word == 'ping':
+                response = "pong!"
+            elif first_word == 'pong':
+                response = "...ping?"
+            elif first_word.startswith("ping") or first_word.startswith("pong"):
+                response = "now you're just being silly."
+
+            if response is not None:
+                await client.bot.send_message(original_msg.channel, f"{author}: {response}")

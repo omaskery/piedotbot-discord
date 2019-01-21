@@ -42,7 +42,7 @@ class MyClient(object):
             await behaviour.on_resumed(self)
 
     async def on_member_join(self, member):
-        print("member joined: {}".format(member.name))
+        print(f"member joined: {member.name}")
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_member_join(self, member))
 
@@ -53,7 +53,7 @@ class MyClient(object):
 
         activation_phrases = [self.bot.user.mention, "!", self.bot.user.name]
 
-        print("[{}] {}".format(message.author, message.content))
+        print(f"[{message.author}] {message.content}")
 
         if message.author == self.bot.user:
             return
@@ -80,33 +80,33 @@ class MyClient(object):
                 self.bot.loop.create_task(behaviour.on_command(self, message, relevant_content))
 
     async def on_message_delete(self, message):
-        print("message deleted:", message)
+        print(f"message deleted: {message!r}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_message_delete(self, message))
 
     async def on_message_edit(self, before, after):
         print("message edited")
-        print("  before:", before)
-        print("  after:", after)
+        print(f"  before: {before!r}")
+        print(f"  after: {after!r}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_message_edit(self, before, after))
 
     async def on_reaction_add(self, reaction, user):
-        print("reaction added '{}' by {}".format(reaction, user))
+        print(f"reaction added '{reaction!r}' by {user!r}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_add(self, reaction, user))
 
     async def on_reaction_remove(self, reaction, user):
-        print("reaction removed '{}' by {}".format(reaction, user))
+        print(f"reaction removed '{reaction!r}' by {user!r}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_remove(self, reaction, user))
 
     async def on_voice_state_update(self, before, after):
-        print("voice state changed {} -> {}".format(before, after))
+        print(f"voice state changed {before!r} -> {after!r}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_voice_state_update(self, before, after))
