@@ -14,20 +14,20 @@ class Behaviour(base_behaviour.Behaviour):
         if before.status != after.status:
             changes.append(f"changed status from {before.status} to {after.status}")
 
-        def extract_channel_name(state):
+        def extract_channel_mention(state):
             if state.voice.voice_channel is not None:
-                return state.voice.voice_channel.name
+                return state.voice.voice_channel.mention
             return None
 
-        before_channel_name = extract_channel_name(before)
-        after_channel_name = extract_channel_name(after)
-        if before_channel_name is not None and after_channel_name is not None:
-            if before_channel_name != after_channel_name:
-                changes.append(f"switched voice channel from {before_channel_name} to {after_channel_name}")
-        elif before_channel_name is not None:
-            changes.append(f"left voice channel {before_channel_name}")
-        elif after_channel_name is not None:
-            changes.append(f"joined voice channel {after_channel_name}")
+        before_channel_mention = extract_channel_mention(before)
+        after_channel_mention = extract_channel_mention(after)
+        if before_channel_mention is not None and after_channel_mention is not None:
+            if before_channel_mention != after_channel_mention:
+                changes.append(f"switched voice channel from {before_channel_mention} to {after_channel_mention}")
+        elif before_channel_mention is not None:
+            changes.append(f"left voice channel {before_channel_mention}")
+        elif after_channel_mention is not None:
+            changes.append(f"joined voice channel {after_channel_mention}")
 
         if before.display_name != after.display_name:
             changes.append(f"changed display name from {before.display_name}")
