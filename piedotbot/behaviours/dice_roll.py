@@ -37,7 +37,14 @@ class Behaviour(base_behaviour.Behaviour):
                 result_str += f" (with {result.addition:+}: {value + result.addition})"
             return result_str
 
-        msg = f'{author.mention} rolled {result.rolls} for a total of {with_addition(result.total)}'
+        msg = f'{author.mention} rolled {result.rolls}'
+        if len(result.rolls) > 1:
+             msg += f' for a total of {with_addition(result.total)}'
+
+        # its very important to celebrate rolling a single nat 20
+        if roll.sides == 20 and result.rolls == [20]:
+            msg += f' - nat 20! :tada: :tada: :tada:'
+
         await client.bot.send_message(original_msg.channel, msg)
 
     @staticmethod
