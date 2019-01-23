@@ -94,13 +94,13 @@ class MyClient(object):
             self.bot.loop.create_task(behaviour.on_message_edit(self, before, after))
 
     async def on_reaction_add(self, reaction, user):
-        print(f"reaction added '{reaction.emoji.name}' by {user.name}")
+        print(f"reaction added '{reaction.emoji}' by {user.name}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_add(self, reaction, user))
 
     async def on_reaction_remove(self, reaction, user):
-        print(f"reaction removed '{reaction.emoji.name}' by {user.name}")
+        print(f"reaction removed '{reaction.emoji}' by {user.name}")
 
         for behaviour in self.behaviours:
             self.bot.loop.create_task(behaviour.on_reaction_remove(self, reaction, user))
