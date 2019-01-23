@@ -37,7 +37,7 @@ class Behaviour(base_behaviour.Behaviour):
                 result_str += f" (with {result.addition:+}: {value + result.addition})"
             return result_str
 
-        msg = f'{author.mention} rolled {result.rolls} for a total of {with_addition(result.total)} and average of {with_addition(result.average)}'
+        msg = f'{author.mention} rolled {result.rolls} for a total of {with_addition(result.total)}'
         await client.bot.send_message(original_msg.channel, msg)
 
     @staticmethod
