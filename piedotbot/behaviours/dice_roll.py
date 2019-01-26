@@ -39,7 +39,9 @@ class Behaviour(base_behaviour.Behaviour):
 
         msg = f'{author.mention} rolled {result.rolls}'
         if len(result.rolls) > 1:
-             msg += f' for a total of {with_addition(result.total)}'
+            msg += f' for a total of {with_addition(result.total)}'
+        elif result.addition is not None:
+            msg += f' with a modifier of {result.addition:+}: {result.total + result.addition}'
 
         # its very important to celebrate rolling a single nat 20
         if roll.sides == 20 and result.rolls == [20]:
