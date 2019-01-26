@@ -28,6 +28,12 @@ class Behaviour(base_behaviour.Behaviour):
         if roll.dice > max_rolls:
             await client.bot.send_message(original_msg.channel, f'{author.mention} no')
             return
+        elif roll.dice < 1:
+            await client.bot.send_message(original_msg.channel, f'{author.mention} don\'t be a knob')
+            return
+        elif roll.sides < 1:
+            await client.bot.send_message(original_msg.channel, f'{author.mention} honestly? come on :/')
+            return
 
         result = self.perform_rolls(roll)
 
