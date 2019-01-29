@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from collections import namedtuple
 import typing
 import random
 import re
@@ -9,27 +9,17 @@ from . import base_behaviour
 MAX_ROLLS = 40
 
 
-@dataclass(frozen=True)
-class RollDescription:
-    dice: int
-    sides: int
-
+class RollDescription(namedtuple('RollDescription', 'dice sides')):
     def __str__(self):
         return f"{self.dice}d{self.sides}"
 
 
-@dataclass(frozen=True)
-class RollCommand:
-    roll_descriptions: typing.List[RollDescription]
-    addition: typing.Optional[int]
+class RollCommand(namedtuple('RollCommand', 'roll_descriptions addition')):
+    pass
 
 
-@dataclass(frozen=True)
-class RollResult:
-    rolls: typing.List[typing.Tuple[RollDescription, typing.List[int]]]
-    total: int
-    addition: typing.Optional[int]
-    number_of_dice_rolled: int
+class RollResult(namedtuple('RollResult', 'rolls total addition number_of_dice_rolled')):
+    pass
 
 
 class Behaviour(base_behaviour.Behaviour):
