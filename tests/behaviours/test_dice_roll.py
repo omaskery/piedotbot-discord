@@ -27,6 +27,20 @@ class TestDiceRolling(unittest.TestCase):
             ("roll 2d20+8", RollCommand([RollDescription(2, 20)], 8)),
             ("roll 2d20-8", RollCommand([RollDescription(2, 20)], -8)),
             ("roll 16d3+20", RollCommand([RollDescription(16, 3)], 20)),
+            (
+                "roll 16d3+3d4",
+                RollCommand(
+                    [RollDescription(16, 3), RollDescription(3, 4)],
+                    None
+                )
+            ),
+            (
+                "roll 16d3+3d4+10",
+                RollCommand(
+                    [RollDescription(16, 3), RollDescription(3, 4)],
+                    10
+                )
+            ),
             ("roll", None),  # must have a specifier
             ("rull 16d3", None),  # first word must be "roll"
             ("", None),  # must have 2 words

@@ -104,12 +104,28 @@ class Behaviour(base_behaviour.Behaviour):
         if len(words) != 2 or words[0].lower() != 'roll':
             return None
 
-        pattern = re.compile(r'(\d+)d(\d+)([+-]\d+)?')
+        pattern = re.compile(r'(?:(\d+)d(\d+))(?:([+-])(\d+)d(\d+))*([-+]\d+)?')
         match = pattern.fullmatch(words[1])
         if match is None:
             return None
 
-        dice, sides = int(match.group(1)), int(match.group(2))
-        addition = int(match.group(3)) if match.group(3) is not None else None
+        groups = [group for group in match.groups() if group is not None]
 
-        return RollCommand([RollDescription(dice, sides)], addition)
+        addition = None
+        roll_descriptions = [
+            RollDescription(int(groups[0]), int(groups[1])),
+        ]
+        group_index = 2
+        while group_index < len(groups):
+            token = groups[group_index]
+            if token in ('+', '-'):
+                roll_descriptions.append(RollDescription(
+                    int(groups[group_index + 1]),
+                    int(groups[group_index + 2])
+                ))
+                group_index += 3
+            else:
+                addition = int(groups[group_index])
+                break
+
+        return RollCommand(roll_descriptions, addition)
