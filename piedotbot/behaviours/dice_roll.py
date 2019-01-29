@@ -1,12 +1,35 @@
-from collections import namedtuple
+from dataclasses import dataclass
+import typing
 import random
 import re
 
 from . import base_behaviour
 
 
-RollDescription = namedtuple("RollDescription", "dice sides addition")
-RollResult = namedtuple("RollResult", "rolls total average addition")
+MAX_ROLLS = 40
+
+
+@dataclass(frozen=True)
+class RollDescription:
+    dice: int
+    sides: int
+
+    def __str__(self):
+        return f"{self.dice}d{self.sides}"
+
+
+@dataclass(frozen=True)
+class RollCommand:
+    roll_descriptions: typing.List[RollDescription]
+    addition: typing.Optional[int]
+
+
+@dataclass(frozen=True)
+class RollResult:
+    rolls: typing.List[typing.Tuple[RollDescription, int]]
+    total: int
+    addition: typing.Optional[int]
+    number_of_dice_rolled: int
 
 
 class Behaviour(base_behaviour.Behaviour):
@@ -16,54 +39,67 @@ class Behaviour(base_behaviour.Behaviour):
         self.allowed_channels = ["bot-shennanigans"]
 
     async def on_command(self, client, original_msg, relevant_content):
-        max_rolls = 40
-
         author = original_msg.author
 
-        roll = self.parse_command(relevant_content)
+        command = self.parse_command(relevant_content)
 
-        if roll is None:
+        if command is None:
             return
 
-        if roll.dice > max_rolls:
-            await client.bot.send_message(original_msg.channel, f'{author.mention} no')
-            return
-        elif roll.dice < 1:
-            await client.bot.send_message(original_msg.channel, f'{author.mention} don\'t be a knob')
-            return
-        elif roll.sides < 1:
-            await client.bot.send_message(original_msg.channel, f'{author.mention} honestly? come on :/')
-            return
+        response = self.generate_response(command)
 
-        result = self.perform_rolls(roll)
+        await client.bot.send_message(original_msg.channel, f'{author.mention} {response}')
 
-        def with_addition(value):
-            result_str = str(value)
-            if result.addition is not None:
-                result_str += f" (with {result.addition:+}: {value + result.addition})"
-            return result_str
+    @staticmethod
+    def generate_response(command: RollCommand) -> str:
+        for roll in command.roll_descriptions:
+            if roll.dice > MAX_ROLLS:
+                return f'{roll}? no'
+            elif roll.dice < 1:
+                return f'{roll}? don\'t be a knob'
+            elif roll.sides < 1:
+                return f'{roll}? honestly? come on :/'
 
-        msg = f'{author.mention} rolled {result.rolls}'
-        if len(result.rolls) > 1:
-            msg += f' for a total of {with_addition(result.total)}'
-        elif result.addition is not None:
+        result = Behaviour.run_command(command)
+
+        msg = f'rolled'
+
+        def show_single_result(description, rolls):
+            return f' {description}: {rolls if len(rolls) > 1 else rolls[0]}'
+
+        for description, rolls in result.rolls:
+            msg += show_single_result(description, rolls)
+
+        if result.number_of_dice_rolled > 1:
+            msg += f' for a total of {result.total}'
+        if result.addition is not None:
             msg += f' with a modifier of {result.addition:+}: {result.total + result.addition}'
 
         # its very important to celebrate rolling a single nat 20
-        if roll.sides == 20 and result.rolls == [20]:
+        if result.number_of_dice_rolled == 1 and result.rolls[0][0].sides == 20 and result.rolls[0][1] == [20]:
             msg += f' - nat 20! :tada: :tada: :tada:'
 
-        await client.bot.send_message(original_msg.channel, msg)
+        return msg
 
     @staticmethod
-    def perform_rolls(roll: RollDescription):
-        rolls = [random.randint(1, roll.sides) for _ in range(roll.dice)]
-        total = sum(rolls)
-        average = total / roll.dice
-        return RollResult(rolls, total, average, roll.addition)
+    def run_command(command: RollCommand) -> RollResult:
+        rolls_by_dice = [
+            (description, Behaviour.perform_roll(description))
+            for description in command.roll_descriptions
+        ]
+        return RollResult(
+            rolls=rolls_by_dice,
+            total=sum(sum(rolls) for _, rolls in rolls_by_dice),
+            addition=command.addition,
+            number_of_dice_rolled=sum(len(rolls) for _, rolls in rolls_by_dice)
+        )
 
     @staticmethod
-    def parse_command(relevant_content):
+    def perform_roll(roll: RollDescription) -> typing.List[int]:
+        return [random.randint(1, roll.sides) for _ in range(roll.dice)]
+
+    @staticmethod
+    def parse_command(relevant_content) -> RollCommand:
         words = relevant_content.split()
         if len(words) != 2 or words[0].lower() != 'roll':
             return None
@@ -76,4 +112,4 @@ class Behaviour(base_behaviour.Behaviour):
         dice, sides = int(match.group(1)), int(match.group(2))
         addition = int(match.group(3)) if match.group(3) is not None else None
 
-        return RollDescription(dice, sides, addition)
+        return RollCommand([RollDescription(dice, sides)], addition)
