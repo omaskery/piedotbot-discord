@@ -41,6 +41,9 @@ class TestDiceRolling(unittest.TestCase):
 
     def test_responses(self):
         cases = [
+            (RollCommand([RollDescription(400, 4)], None), r"^400d4\? no$"),
+            (RollCommand([RollDescription(0, 4)], None), r"^0d4\? don't be a knob$"),
+            (RollCommand([RollDescription(4, 0)], None), r"^4d0\? honestly\? come on :/$"),
             (RollCommand([RollDescription(1, 4)], None), r"^rolled 1d4: [1-4]$"),
             (RollCommand([RollDescription(1, 8)], None), r"^rolled 1d8: [1-8]$"),
             (RollCommand([RollDescription(2, 4)], None), r"^rolled 2d4: \[[1-4], [1-4]\] for a total of \d+$"),
