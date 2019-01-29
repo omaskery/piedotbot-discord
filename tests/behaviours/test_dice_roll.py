@@ -62,16 +62,3 @@ class TestDiceRolling(unittest.TestCase):
             with self.subTest("specific case", stimulus=stimulus, expected=expected):
                 actual_result = Behaviour.generate_response(stimulus)
                 self.assertRegex(actual_result, expected, "actual result did not match expected")
-
-"""
-    def test_roll_specifier_parsing_multiple_rolls(self):
-        cases = [
-            ("roll 2d10+4d5", [(2, 10), '+', (4, 5)]),
-        ]
-
-        for case in cases:
-            stimulus, expected = case
-            with self.subTest("specific case", stimulus=stimulus, expected=expected):
-                actual_result = dice_roll.Behaviour.parse_command(stimulus)
-                self.assertEqual(expected, actual_result, "actual result did not match expected")
-"""

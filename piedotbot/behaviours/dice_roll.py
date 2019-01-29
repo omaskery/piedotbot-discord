@@ -26,7 +26,7 @@ class RollCommand:
 
 @dataclass(frozen=True)
 class RollResult:
-    rolls: typing.List[typing.Tuple[RollDescription, int]]
+    rolls: typing.List[typing.Tuple[RollDescription, typing.List[int]]]
     total: int
     addition: typing.Optional[int]
     number_of_dice_rolled: int
@@ -99,7 +99,7 @@ class Behaviour(base_behaviour.Behaviour):
         return [random.randint(1, roll.sides) for _ in range(roll.dice)]
 
     @staticmethod
-    def parse_command(relevant_content) -> RollCommand:
+    def parse_command(relevant_content) -> typing.Optional[RollCommand]:
         words = relevant_content.split()
         if len(words) != 2 or words[0].lower() != 'roll':
             return None
