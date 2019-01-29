@@ -5,4 +5,4 @@ cache: pip
 install:
   - 'pip install pipenv'
   - 'pipenv sync'
-script: python run -m unittest discover
+script: python -m unittest discover
