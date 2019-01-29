@@ -2,4 +2,7 @@ language: python
 python: 3.7
 dist: xenial
 cache: pip
-script: python -m unittest discover
+install:
+  - 'pip install pipenv'
+  - 'pipenv sync'
+script: python run -m unittest discover
