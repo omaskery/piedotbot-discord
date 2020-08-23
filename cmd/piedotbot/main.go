@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/omaskery/piedotbot-discord/internal/behaviours"
+	"github.com/omaskery/piedotbot-discord/internal/state"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -12,20 +11,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/zapr"
 )
-
-type BotState struct {
-	logger logr.Logger
-}
-
-type CommandFunction = func (logger logr.Logger, session *discordgo.Session, create *discordgo.MessageCreate) error
-
-var (
-	commands []CommandFunction
-)
-
-func registerCommand(f CommandFunction) {
-	commands = append(commands, f)
-}
 
 func main() {
 	botToken := os.Getenv("BOT_TOKEN")
@@ -52,18 +37,10 @@ func main() {
 		return
 	}
 
-	state := BotState{
-		logger,
-	}
-
-	registerCommand(behaviours.PingCommand)
-	registerCommand(behaviours.RollDice)
-
-	// Register the messageCreate func as a callback for MessageCreate events.
-	dg.AddHandler(state.messageCreate)
+	_ = state.New(logger, dg)
 
 	// In this example, we only care about receiving message events.
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates)
 
 	logger.Info("establishing websocket connection")
 	// Open a websocket connection to Discord and begin listening.
@@ -84,29 +61,6 @@ func main() {
 	err = dg.Close()
 	if err != nil {
 		logger.Error(err, "error while closing discord session")
-	}
-}
-
-// Called when a message is created in a channel bot can see
-func (s *BotState) messageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
-	logger := s.logger.WithValues(
-		"author", msg.Author.Username,
-		"msg", msg.Content,
-	)
-
-	defer logger.Info("processed message")
-
-	// Ignore all messages created by the bot itself
-	if msg.Author.ID == session.State.User.ID {
-		return
-	}
-
-	for _, cmd := range commands {
-		err := (cmd)(logger, session, msg)
-		if err != nil {
-			logger.Error(err, "error processing command")
-			err = session.MessageReactionAdd(msg.ChannelID, msg.ID, "🤯")
-		}
 	}
 }
 
