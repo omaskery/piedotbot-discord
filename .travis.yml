@@ -1,7 +1,4 @@
-language: python
-python: 3.8
-cache: pip
-install:
-  - 'pip install pipenv'
-  - 'pipenv sync'
-script: python -m unittest discover
+language: go
+go:
+  - 1.x
+  - "1.15"
