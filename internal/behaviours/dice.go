@@ -50,7 +50,7 @@ func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageC
 			rollResponse.WriteString(" and ")
 		}
 
-		roll := rand.Intn(sideCount)
+		roll := rand.Intn(sideCount - 1) + 1
 		rollResponse.WriteString(fmt.Sprintf("%v", roll))
 		sum += roll
 		rolls = append(rolls, roll)
