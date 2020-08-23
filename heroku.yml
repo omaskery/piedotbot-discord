@@ -3,4 +3,6 @@ build:
     worker: Dockerfile
 run:
   worker:
+    command:
+      - /piedotbot
     image: worker

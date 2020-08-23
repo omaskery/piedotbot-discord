@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	flagToken = kingpin.Arg("bot_token", "Discord API Bot Auth Token").Envar("BOT_TOKEN").Required().String()
+	flagToken = kingpin.Flag("bot_token", "Discord API Bot Auth Token").Envar("BOT_TOKEN").Required().String()
 )
 
 type BotState struct {
@@ -44,7 +44,7 @@ func main() {
 	logger.Info("starting")
 	defer logger.Info("exiting")
 
-	logger.Info("token sanity check", "len", len(*flagToken), "t", *flagToken)
+	logger.Info("token sanity check", "len", len(*flagToken))
 
 	logger.Info("creating session")
 	// Create a new Discord session using the provided bot token.
