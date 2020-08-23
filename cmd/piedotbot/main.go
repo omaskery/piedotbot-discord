@@ -44,6 +44,8 @@ func main() {
 	logger.Info("starting")
 	defer logger.Info("exiting")
 
+	logger.Info("token sanity check", "len", len(*flagToken))
+
 	logger.Info("creating session")
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + *flagToken)
