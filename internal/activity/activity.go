@@ -96,7 +96,7 @@ func (a *Activity) VoiceStateUpdated(session *discordgo.Session, update *discord
 			return
 		}
 
-		a.Record(session, update.GuildID, fmt.Sprintf("<@%v> left channel %v", user.ID, channel.Name))
+		a.Record(session, update.GuildID, fmt.Sprintf("%v left channel %v", user.Username, channel.Name))
 	} else if (tracked.voiceState == nil || tracked.voiceState.ChannelID == "") && update.ChannelID != "" {
 		channel, err := session.Channel(update.ChannelID)
 		if err != nil {
@@ -104,7 +104,7 @@ func (a *Activity) VoiceStateUpdated(session *discordgo.Session, update *discord
 			return
 		}
 
-		a.Record(session, update.GuildID, fmt.Sprintf("<@%v> joined channel %v", user.ID, channel.Name))
+		a.Record(session, update.GuildID, fmt.Sprintf("%v joined channel %v", user.Username, channel.Name))
 	} else if tracked.voiceState != nil && tracked.voiceState.ChannelID != "" && update.ChannelID != "" {
 		oldChannel, err := session.Channel(tracked.voiceState.ChannelID)
 		if err != nil {
@@ -118,7 +118,7 @@ func (a *Activity) VoiceStateUpdated(session *discordgo.Session, update *discord
 			return
 		}
 
-		a.Record(session, update.GuildID, fmt.Sprintf("<@%v> moved from %v to %v", user.ID, oldChannel.Name, newChannel.Name))
+		a.Record(session, update.GuildID, fmt.Sprintf("%v moved from %v to %v", user.Username, oldChannel.Name, newChannel.Name))
 	}
 
 	tracked.voiceState = update.VoiceState
