@@ -5,17 +5,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/omaskery/piedotbot-discord/internal/behaviours"
 	"go.uber.org/zap"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/zapr"
-)
-
-var (
-	flagToken = kingpin.Flag("bot_token", "Discord API Bot Auth Token").Envar("BOT_TOKEN").Required().String()
 )
 
 type BotState struct {
@@ -33,7 +28,10 @@ func registerCommand(f CommandFunction) {
 }
 
 func main() {
-	kingpin.Parse()
+	botToken := os.Getenv("BOT_TOKEN")
+	if botToken == "" {
+		panic("no BOT_TOKEN environment variable provided")
+	}
 
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
@@ -44,11 +42,11 @@ func main() {
 	logger.Info("starting")
 	defer logger.Info("exiting")
 
-	logger.Info("token sanity check", "len", len(*flagToken))
+	logger.Info("token sanity check", "len", len(botToken))
 
 	logger.Info("creating session")
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + *flagToken)
+	dg, err := discordgo.New("Bot " + botToken)
 	if err != nil {
 		logger.Error(err, "error creating Discord session")
 		return
@@ -83,7 +81,6 @@ func main() {
 	logger.Info("exit signal received")
 
 	logger.Info("closing discord session")
-	// Cleanly close down the Discord session.
 	err = dg.Close()
 	if err != nil {
 		logger.Error(err, "error while closing discord session")
