@@ -30,12 +30,18 @@ func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageC
 		_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, "😢")
 		return err
 	}
+	if diceCount < 1 {
+		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+	}
 
 	maxSideCount := 100
 	if sideCount > maxSideCount {
 		_, err := session.ChannelMessageSend(msg.ChannelID, fmt.Sprintf("but I only have dice with up to %v sides... 😰", maxSideCount))
 		_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, "😢")
 		return err
+	}
+	if sideCount < 1 {
+		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
 	}
 
 	rollResponse := strings.Builder{}
