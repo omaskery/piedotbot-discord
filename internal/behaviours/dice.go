@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageCreate) error {
+func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.MessageCreate) error {
 	regex, err := regexp.Compile("!roll\\s+(\\d+)\\s*d\\s*(\\d+)(\\s*[+-](\\d+))?")
 	if err != nil {
 		return fmt.Errorf("failed to compile dice regexp: %v", err)
@@ -21,8 +21,16 @@ func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageC
 		return nil
 	}
 
-	diceCount, _ := strconv.Atoi(groups[1])
-	sideCount, _ := strconv.Atoi(groups[2])
+	diceCount, err := strconv.Atoi(groups[1])
+	if err != nil {
+		logger.Error(err, "failed to parse dice count", "value", groups[1])
+		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+	}
+	sideCount, err := strconv.Atoi(groups[2])
+	if err != nil {
+		logger.Error(err, "failed to parse side count", "value", groups[2])
+		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+	}
 
 	maxDiceCount := 30
 	if diceCount > maxDiceCount {
@@ -44,6 +52,18 @@ func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageC
 		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
 	}
 
+	offset := 0
+
+	if len(groups) > 3 {
+		offset, err = strconv.Atoi(strings.TrimSpace(groups[3]))
+		if err != nil {
+			logger.Error(err, "failed to parse offset", "value", groups[3])
+			return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+		}
+	}
+
+	logger.Info("rolling dice", "dice", diceCount, "sides", sideCount, "offset", offset)
+
 	rollResponse := strings.Builder{}
 	rollResponse.WriteString(fmt.Sprintf("<@%v> rolled ", msg.Author.ID))
 
@@ -63,12 +83,9 @@ func RollDice(_ logr.Logger, session *discordgo.Session, msg *discordgo.MessageC
 	}
 	rollResponse.WriteString(fmt.Sprintf(" for a total of %v", sum))
 
-	if len(groups) > 3 {
-		offset, _ := strconv.Atoi(strings.TrimSpace(groups[3]))
-		if offset < 0 || offset > 0 {
-			sum += offset
-			rollResponse.WriteString(fmt.Sprintf(", with %v the total becomes %v", offset, sum))
-		}
+	if offset < 0 || offset > 0 {
+		sum += offset
+		rollResponse.WriteString(fmt.Sprintf(", with %v the total becomes %v", offset, sum))
 	}
 
 	_, err = session.ChannelMessageSend(msg.ChannelID, rollResponse.String())
