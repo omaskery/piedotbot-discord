@@ -11,7 +11,7 @@ import (
 )
 
 func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.MessageCreate) error {
-	regex, err := regexp.Compile("!roll\\s+(\\d+)\\s*d\\s*(\\d+)(\\s*[+-](\\d+))?")
+	regex, err := regexp.Compile("!roll\\s+(\\d+)\\s*d\\s*(\\d+)\\s*([+-](\\d+))?")
 	if err != nil {
 		return fmt.Errorf("failed to compile dice regexp: %v", err)
 	}
@@ -54,8 +54,8 @@ func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.Mes
 
 	offset := 0
 
-	if len(groups) > 3 {
-		offset, err = strconv.Atoi(strings.TrimSpace(groups[3]))
+	if groups[3] != "" {
+		offset, err = strconv.Atoi(groups[3])
 		if err != nil {
 			logger.Error(err, "failed to parse offset", "value", groups[3])
 			return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
