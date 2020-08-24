@@ -43,6 +43,13 @@ func (s *BotState) messageCreate(session *discordgo.Session, msg *discordgo.Mess
 		"msg", msg.Content,
 	)
 
+	channel, err := session.Channel(msg.ChannelID)
+	if err != nil {
+		logger.Error(err, "failed to retrieve channel info for message", "channel-id", msg.ChannelID)
+	} else {
+		logger = logger.WithValues("channel", channel.Name)
+	}
+
 	defer logger.Info("processed message")
 
 	// Ignore all messages created by the bot itself
