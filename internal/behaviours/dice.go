@@ -81,7 +81,9 @@ func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.Mes
 		sum += roll
 		rolls = append(rolls, roll)
 	}
-	rollResponse.WriteString(fmt.Sprintf(" for a total of %v", sum))
+	if diceCount > 1 {
+		rollResponse.WriteString(fmt.Sprintf(" for a total of %v", sum))
+	}
 
 	if offset < 0 || offset > 0 {
 		sum += offset
