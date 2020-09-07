@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: piedotbot-deployment
+  labels:
+    app.kubernetes.io/name: piedotbot
+    app.kubernetes.io/component: bot
+    app.kubernetes.io/part-of: piedotbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: piedotbot
+      app.kubernetes.io/component: bot
+      app.kubernetes.io/part-of: piedotbot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: piedotbot
+        app.kubernetes.io/component: bot
+        app.kubernetes.io/part-of: piedotbot
+    spec:
+      containers:
+        - name: piedotbot
+          image: ghcr.io/omaskery/piedotbot:latest
+          env:
+            - name: BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: piedotbot-secrets
+                  key: discord-bot-token
+          resources:
+            requests:
+              cpu: 1m
+              memory: 20Mi
+            limits:
+              cpu: 10m
+              memory: 50Mi
