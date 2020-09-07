@@ -41,6 +41,15 @@ func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) *BotState 
 		pool:     pool,
 	}
 
+	// register our commands that handle & react to messages
+	state.registerCommand(behaviours.PingCommand)
+	state.registerCommand(behaviours.RollDice)
+
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(state.messageCreate)
+	dg.AddHandler(state.activity.VoiceStateUpdated)
+
+	logger.Info("checking redis connection", "redis", redisAddr)
 	conn := state.pool.Get()
 	defer func() {
 		if err := conn.Close(); err != nil {
@@ -51,14 +60,7 @@ func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) *BotState 
 	if _, err := conn.Do("PING"); err != nil {
 		logger.Error(err, "failed to ping redis server")
 	}
-
-	// register our commands that handle & react to messages
-	state.registerCommand(behaviours.PingCommand)
-	state.registerCommand(behaviours.RollDice)
-
-	// Register the messageCreate func as a callback for MessageCreate events.
-	dg.AddHandler(state.messageCreate)
-	dg.AddHandler(state.activity.VoiceStateUpdated)
+	logger.Info("redis connection confirmed")
 
 	return state
 }
