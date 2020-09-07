@@ -3,22 +3,53 @@ package state
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/logr"
+	"github.com/gomodule/redigo/redis"
 	"github.com/omaskery/piedotbot-discord/internal/activity"
 	"github.com/omaskery/piedotbot-discord/internal/behaviours"
+	"time"
 )
 
 type CommandFunction = func(Logger logr.Logger, session *discordgo.Session, create *discordgo.MessageCreate) error
 
 type BotState struct {
-	logger        logr.Logger
-	commands      []CommandFunction
-	activity      activity.Activity
+	logger   logr.Logger
+	commands []CommandFunction
+	activity activity.Activity
+	pool     *redis.Pool
 }
 
-func New(logger logr.Logger, dg *discordgo.Session) *BotState {
+func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) *BotState {
+	pool := &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", redisAddr)
+		},
+		MaxIdle:     3,
+		IdleTimeout: 4 * time.Minute,
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			if time.Since(t) < time.Minute {
+				return nil
+			}
+
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+
 	state := &BotState{
-		logger:        logger,
-		activity:      activity.New(logger),
+		logger:   logger,
+		activity: activity.New(logger),
+		pool:     pool,
+	}
+
+	conn := state.pool.Get()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			logger.Error(err, "failed to close redis connection")
+		}
+	}()
+
+	if _, err := conn.Do("PING"); err != nil {
+		logger.Error(err, "failed to ping redis server")
 	}
 
 	// register our commands that handle & react to messages
@@ -65,4 +96,3 @@ func (s *BotState) messageCreate(session *discordgo.Session, msg *discordgo.Mess
 		}
 	}
 }
-

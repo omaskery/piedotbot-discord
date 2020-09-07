@@ -18,6 +18,11 @@ func main() {
 		panic("no BOT_TOKEN environment variable provided")
 	}
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		panic("no REDIS_ADDR environment variable provided")
+	}
+
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("unable to initialise logging: %v", err))
@@ -37,7 +42,7 @@ func main() {
 		return
 	}
 
-	_ = state.New(logger, dg)
+	_ = state.New(logger, dg, redisAddr)
 
 	// In this example, we only care about receiving message events.
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates)
