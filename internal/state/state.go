@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/logr"
 	"github.com/gomodule/redigo/redis"
@@ -18,7 +19,7 @@ type BotState struct {
 	pool     *redis.Pool
 }
 
-func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) *BotState {
+func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) (*BotState, error) {
 	pool := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
 			return redis.Dial("tcp", redisAddr)
@@ -58,11 +59,11 @@ func New(logger logr.Logger, dg *discordgo.Session, redisAddr string) *BotState 
 	}()
 
 	if _, err := conn.Do("PING"); err != nil {
-		logger.Error(err, "failed to ping redis server")
+		return nil, fmt.Errorf("failed to ping redis server: %w", err)
 	}
 	logger.Info("redis connection confirmed")
 
-	return state
+	return state, nil
 }
 
 func (s *BotState) registerCommand(f CommandFunction) {

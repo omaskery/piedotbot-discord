@@ -42,7 +42,11 @@ func main() {
 		return
 	}
 
-	_ = state.New(logger, dg, redisAddr)
+	_, err = state.New(logger, dg, redisAddr)
+	if err != nil {
+		logger.Error(err, "failed to initialise bot state")
+		return
+	}
 
 	// In this example, we only care about receiving message events.
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates)
