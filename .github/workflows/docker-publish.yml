@@ -93,4 +93,4 @@ jobs:
           manifests: |
             ./deployments/k8s/piedotbot-redis.yaml
             ./deployments/k8s/piedotbot-deployment.yaml
-          images: 'ghcr.io/omaskery/piedotbot:$GIT_REF'
+          images: 'ghcr.io/omaskery/piedotbot:${{ GIT_REF }}'
