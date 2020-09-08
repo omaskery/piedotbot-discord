@@ -90,7 +90,7 @@ jobs:
         uses: Azure/k8s-deploy@v1.2
         with:
           namespace: oliver
-          # Path to the manifest files which will be used for deployment.
-          manifests: ./deployments/k8s
-          # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
+          manifests: |
+            ./deployments/k8s/piedotbot-redis.yaml
+            ./deployments/k8s/piedotbot-deployment.yaml
           images: 'ghcr.io/omaskery/piedotbot:$GIT_REF'
