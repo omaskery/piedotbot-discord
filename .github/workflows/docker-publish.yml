@@ -83,8 +83,8 @@ jobs:
         uses: Azure/k8s-set-context@v1
         with:
           method: service-account
-          k8s-url: $secrets.K8S_API_ADDR
-          k8s-secret: $secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN
+          k8s-url: "${{ $secrets.K8S_API_ADDR }}"
+          k8s-secret: "${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}"
       
       - name: Deploy to Kubernetes cluster
         uses: Azure/k8s-deploy@v1.2
