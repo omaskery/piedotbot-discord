@@ -91,6 +91,6 @@ jobs:
         with:
           namespace: oliver
           # Path to the manifest files which will be used for deployment.
-          manifests: ./deployments/k8s/*
+          manifests: ./deployments/k8s
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
           images: 'ghcr.io/omaskery/piedotbot:$GIT_REF'
