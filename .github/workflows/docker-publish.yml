@@ -62,8 +62,6 @@ jobs:
 
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          
-          GIT_REF=$(git rev-parse HEAD)
 
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
@@ -73,10 +71,9 @@ jobs:
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          echo GIT_REF=$GIT_REF
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$GIT_REF
+          docker tag $IMAGE_NAME $IMAGE_ID:${{ github.sha }}
           docker push $IMAGE_ID
           
       - name: Kubernetes set context
@@ -93,4 +90,5 @@ jobs:
           manifests: |
             ./deployments/k8s/piedotbot-redis.yaml
             ./deployments/k8s/piedotbot-deployment.yaml
-          images: 'ghcr.io/omaskery/piedotbot:${{ GIT_REF }}'
+          images: |
+            ghcr.io/omaskery/piedotbot:${{ github.sha }}
