@@ -62,6 +62,8 @@ jobs:
 
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          
+          GIT_REF=$(git rev-parse HEAD)
 
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
@@ -71,6 +73,24 @@ jobs:
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
+          echo GIT_REF=$GIT_REF
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$GIT_REF
+          docker push $IMAGE_ID
+          
+      - name: Kubernetes set context
+        uses: Azure/k8s-set-context@v1
+        with:
+          method: service-account
+          k8s-url: $secrets.K8S_API_ADDR
+          k8s-secret: $secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN
+      
+      - name: Deploy to Kubernetes cluster
+        uses: Azure/k8s-deploy@v1.2
+        with:
+          namespace: oliver
+          # Path to the manifest files which will be used for deployment.
+          manifests: ./deployments/k8s/*
+          # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
+          images: 'ghcr.io/omaskery/piedotbot:$GIT_REF'
