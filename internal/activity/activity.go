@@ -87,34 +87,42 @@ func (a *Activity) VoiceStateUpdated(session *discordgo.Session, update *discord
 		return
 	}
 
-	tracked := a.TrackUser(user)
+	var newChannelID = update.ChannelID
+	goingIntoChannel := newChannelID != ""
 
-	if tracked.voiceState != nil && tracked.voiceState.ChannelID != "" && update.ChannelID == "" {
-		channel, err := session.Channel(tracked.voiceState.ChannelID)
+	tracked := a.TrackUser(user)
+	prevChannelID := ""
+	if tracked.voiceState != nil {
+		prevChannelID = tracked.voiceState.ChannelID
+	}
+	wasInChannel := prevChannelID != ""
+
+	if wasInChannel && !goingIntoChannel {
+		channel, err := session.Channel(prevChannelID)
 		if err != nil {
-			a.logger.Error(err, "unable to query previous channel information", "channel", tracked.voiceState.ChannelID)
+			a.logger.Error(err, "unable to query previous channel information", "channel", prevChannelID)
 			return
 		}
 
 		a.Record(session, update.GuildID, fmt.Sprintf("%v left channel %v", user.Username, channel.Name))
-	} else if (tracked.voiceState == nil || tracked.voiceState.ChannelID == "") && update.ChannelID != "" {
-		channel, err := session.Channel(update.ChannelID)
+	} else if !wasInChannel && goingIntoChannel {
+		channel, err := session.Channel(newChannelID)
 		if err != nil {
-			a.logger.Error(err, "unable to query new channel information", "channel", update.ChannelID)
+			a.logger.Error(err, "unable to query new channel information", "channel", newChannelID)
 			return
 		}
 
 		a.Record(session, update.GuildID, fmt.Sprintf("%v joined channel %v", user.Username, channel.Name))
-	} else if tracked.voiceState != nil && tracked.voiceState.ChannelID != "" && update.ChannelID != "" {
-		oldChannel, err := session.Channel(tracked.voiceState.ChannelID)
+	} else if wasInChannel && goingIntoChannel && prevChannelID != newChannelID {
+		oldChannel, err := session.Channel(prevChannelID)
 		if err != nil {
-			a.logger.Error(err, "unable to query previous channel information", "channel", tracked.voiceState.ChannelID)
+			a.logger.Error(err, "unable to query previous channel information", "channel", prevChannelID)
 			return
 		}
 
-		newChannel, err := session.Channel(update.ChannelID)
+		newChannel, err := session.Channel(newChannelID)
 		if err != nil {
-			a.logger.Error(err, "unable to query new channel information", "channel", update.ChannelID)
+			a.logger.Error(err, "unable to query new channel information", "channel", newChannel)
 			return
 		}
 
