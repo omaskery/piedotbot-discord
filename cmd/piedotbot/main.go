@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/omaskery/piedotbot-discord/internal/state"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"go.uber.org/zap"
+
+	"github.com/omaskery/piedotbot-discord/internal/state"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/zapr"
@@ -72,4 +74,3 @@ func main() {
 		logger.Error(err, "error while closing discord session")
 	}
 }
-

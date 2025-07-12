@@ -2,6 +2,7 @@ package activity
 
 import (
 	"fmt"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"

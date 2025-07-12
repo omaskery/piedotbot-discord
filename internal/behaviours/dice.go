@@ -2,12 +2,13 @@ package behaviours
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-logr/logr"
 	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/go-logr/logr"
 )
 
 func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.MessageCreate) error {
@@ -76,7 +77,7 @@ func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.Mes
 			rollResponse.WriteString(" and ")
 		}
 
-		roll := rand.Intn(sideCount - 1) + 1
+		roll := rand.Intn(sideCount-1) + 1
 		rollResponse.WriteString(fmt.Sprintf("%v", roll))
 		sum += roll
 		rolls = append(rolls, roll)

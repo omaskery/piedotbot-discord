@@ -2,12 +2,14 @@ package state
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-logr/logr"
 	"github.com/gomodule/redigo/redis"
+
 	"github.com/omaskery/piedotbot-discord/internal/activity"
 	"github.com/omaskery/piedotbot-discord/internal/behaviours"
-	"time"
 )
 
 type CommandFunction = func(Logger logr.Logger, session *discordgo.Session, create *discordgo.MessageCreate) error
