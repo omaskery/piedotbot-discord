@@ -51,3 +51,4 @@ jobs:
             ./deployments/k8s/piedotbot-deployment.yaml
           images: |
             ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image_name }}:${{ github.sha }}
+          annotate-namespace: 'false'
