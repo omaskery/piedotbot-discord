@@ -1,76 +1,70 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/omaskery/piedotbot-discord/internal/state"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-logr/zapr"
+	"github.com/omaskery/piedotbot-discord/internal"
+	"github.com/omaskery/piedotbot-discord/internal/behaviours"
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
+
+	logger.InfoContext(ctx, "starting")
+	defer logger.InfoContext(ctx, "exiting")
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	go func() {
+		logger.InfoContext(ctx, "listening for exit signal")
+		<-sc
+		logger.InfoContext(ctx, "received exit signal")
+		cancel()
+	}()
+
+	if err := errMain(ctx, logger); err != nil {
+		logger.With("err", err).Error("exiting with error")
+		os.Exit(1)
+	}
+}
+
+func errMain(ctx context.Context, logger *slog.Logger) error {
 	botToken := os.Getenv("BOT_TOKEN")
 	if botToken == "" {
 		panic("no BOT_TOKEN environment variable provided")
 	}
+	logger.InfoContext(ctx, "token sanity check", "len", len(botToken))
 
-	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == "" {
-		panic("no REDIS_ADDR environment variable provided")
-	}
-
-	zapLog, err := zap.NewDevelopment()
+	bot, err := internal.NewBot(logger, botToken)
 	if err != nil {
-		panic(fmt.Sprintf("unable to initialise logging: %v", err))
-	}
-	logger := zapr.NewLogger(zapLog)
-
-	logger.Info("starting")
-	defer logger.Info("exiting")
-
-	logger.Info("token sanity check", "len", len(botToken))
-
-	logger.Info("creating session")
-	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + botToken)
-	if err != nil {
-		logger.Error(err, "error creating Discord session")
-		return
+		return fmt.Errorf("creating bot: %w", err)
 	}
 
-	_, err = state.New(logger, dg, redisAddr)
-	if err != nil {
-		logger.Error(err, "failed to initialise bot state")
-		return
-	}
+	internal.PanicIfErr("adding bot listener", bot.AddListener("dice", behaviours.NewDiceRoller(bot)))
+	internal.PanicIfErr("adding bot listener", bot.AddListener("ping", behaviours.NewPingListener(bot)))
+	internal.PanicIfErr("adding bot listener", bot.AddListener("activity", behaviours.NewActivityTracker(bot, bot)))
 
-	// In this example, we only care about receiving message events.
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates)
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		return bot.Start(ctx)
+	})
 
-	logger.Info("establishing websocket connection")
-	// Open a websocket connection to Discord and begin listening.
-	err = dg.Open()
-	if err != nil {
-		logger.Error(err, "error opening connection")
-		return
-	}
+	logger.InfoContext(ctx, "startup complete, running")
+	internal.LogIfFails(ctx, logger, "error group returned error", internal.IgnoreIfCancelFn(grp.Wait))
+	logger.InfoContext(ctx, "shutting down")
 
-	// Wait here until CTRL-C or other term signal is received.
-	logger.Info("running, awaiting exit signal")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-	logger.Info("exit signal received")
-
-	logger.Info("closing discord session")
-	err = dg.Close()
-	if err != nil {
-		logger.Error(err, "error while closing discord session")
-	}
+	return nil
 }

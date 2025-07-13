@@ -29,8 +29,6 @@ spec:
                 secretKeyRef:
                   name: piedotbot-secrets
                   key: discord-bot-token
-            - name: REDIS_ADDR
-              value: piedotbot-redis:6379
           resources:
             requests:
               cpu: 1m

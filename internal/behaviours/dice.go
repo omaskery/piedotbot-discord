@@ -1,56 +1,74 @@
 package behaviours
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/go-logr/logr"
+	"github.com/omaskery/piedotbot-discord/internal"
 )
 
-func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.MessageCreate) error {
-	regex, err := regexp.Compile("!roll\\s+(\\d+)\\s*d\\s*(\\d+)\\s*([+-](\\d+))?")
-	if err != nil {
-		return fmt.Errorf("failed to compile dice regexp: %v", err)
+const rollCommandStr = "!roll"
+
+var rollRegex = regexp.MustCompile("(\\d+)\\s*d\\s*(\\d+)\\s*([+-](\\d+))?")
+
+type DiceRoller struct {
+	responder Responder
+}
+
+func NewDiceRoller(responder Responder) *DiceRoller {
+	return &DiceRoller{
+		responder: responder,
+	}
+}
+
+func (dr *DiceRoller) HandleMessage(ctx context.Context, logger *slog.Logger, msg *internal.MessageCreated) error {
+	const emojiAnnoyed = "😒"
+	const emojiSad = "😢"
+
+	parts := strings.SplitN(strings.Trim(msg.Content, " "), " ", 2)
+	if len(parts) < 2 || parts[0] != rollCommandStr {
+		return nil
 	}
 
-	groups := regex.FindStringSubmatch(msg.Content)
+	rollStr := parts[1]
+
+	groups := rollRegex.FindStringSubmatch(rollStr)
+	logger = logger.With("roll-str", rollStr, "groups", groups)
+
+	helper := newResponseHelper(logger, dr.responder, msg)
+
 	if len(groups) < 3 {
-		return nil
+		return helper.respondError(ctx, logger, respondInChannel, fmt.Errorf("malformed command"), emojiAnnoyed, "malformed command")
 	}
 
 	diceCount, err := strconv.Atoi(groups[1])
 	if err != nil {
-		logger.Error(err, "failed to parse dice count", "value", groups[1])
-		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+		return helper.respondError(ctx, logger, respondInChannel, err, emojiAnnoyed, "failed to parse dice count")
 	}
 	sideCount, err := strconv.Atoi(groups[2])
 	if err != nil {
-		logger.Error(err, "failed to parse side count", "value", groups[2])
-		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+		return helper.respondError(ctx, logger, respondInChannel, err, emojiAnnoyed, "failed to parse side count")
 	}
 
 	maxDiceCount := 30
 	if diceCount > maxDiceCount {
-		_, err := session.ChannelMessageSend(msg.ChannelID, fmt.Sprintf("but I only have %v dice... 😰", maxDiceCount))
-		_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, "😢")
-		return err
+		return helper.respondf(ctx, respondInChannel, emojiSad, "but I only have %v dice... 😰", maxDiceCount)
 	}
 	if diceCount < 1 {
-		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+		return dr.responder.AddReaction(ctx, msg.Channel.ID, msg.ID, emojiAnnoyed)
 	}
 
 	maxSideCount := 100
 	if sideCount > maxSideCount {
-		_, err := session.ChannelMessageSend(msg.ChannelID, fmt.Sprintf("but I only have dice with up to %v sides... 😰", maxSideCount))
-		_ = session.MessageReactionAdd(msg.ChannelID, msg.ID, "😢")
-		return err
+		return helper.respondf(ctx, respondInChannel, emojiSad, "but I only have dice with up to %v sides... 😰", maxSideCount)
 	}
 	if sideCount < 1 {
-		return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+		return dr.responder.AddReaction(ctx, msg.Channel.ID, msg.ID, emojiAnnoyed)
 	}
 
 	offset := 0
@@ -58,8 +76,7 @@ func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.Mes
 	if groups[3] != "" {
 		offset, err = strconv.Atoi(groups[3])
 		if err != nil {
-			logger.Error(err, "failed to parse offset", "value", groups[3])
-			return session.MessageReactionAdd(msg.ChannelID, msg.ID, "😒")
+			return helper.respondError(ctx, logger, respondInChannel, err, emojiAnnoyed, "failed to parse offset")
 		}
 	}
 
@@ -91,6 +108,9 @@ func RollDice(logger logr.Logger, session *discordgo.Session, msg *discordgo.Mes
 		rollResponse.WriteString(fmt.Sprintf(", with %v the total becomes %v", offset, sum))
 	}
 
-	_, err = session.ChannelMessageSend(msg.ChannelID, rollResponse.String())
-	return err
+	return helper.respond(ctx, respondInChannel, "", rollResponse.String())
+}
+
+func (dr *DiceRoller) VoiceStateUpdated(context.Context, *slog.Logger, *internal.VoiceStateUpdate) error {
+	return nil
 }
