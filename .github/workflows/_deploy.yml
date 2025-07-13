@@ -29,22 +29,24 @@ jobs:
     environment: ${{ inputs.environment }}
 
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
       - name: Log into GitHub Container Registry
-        uses: docker/login-action@v3.4.0
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772
         with:
           registry: ${{ inputs.registry }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set Kubernetes context
-        uses: Azure/k8s-set-context@v4.0.1
+        uses: Azure/k8s-set-context@212a19233d93f03eceaac31ae5a1d1acf650b6ef
         with:
           method: service-account
           k8s-url: "${{ secrets.K8S_API_ADDR }}"
           k8s-secret: "${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}"
 
       - name: Apply Kubernetes manifests
-        uses: Azure/k8s-deploy@v5.0.3
+        uses: Azure/k8s-deploy@b0f33712c6b266c3ddd7e96416fcc7a7837d98dc
         with:
           namespace: oliver
           manifests: |
