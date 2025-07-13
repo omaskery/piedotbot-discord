@@ -8,5 +8,6 @@ jobs:
     uses: ./.github/workflows/_docker.yml
     with:
       registry: ${{ vars.REGISTRY }}
+      registry_namespace: ${{ vars.REGISTRY_NAMESPACE }}
       image_name: ${{ vars.IMAGE_NAME }}
       push: false

@@ -8,6 +8,10 @@ on:
         description: The container registry to push to
         required: true
         type: string
+      registry_namespace:
+        description: The container registry namespace to push to
+        required: true
+        type: string
       image_name:
         description: The name of the container image to use
         required: true
@@ -38,7 +42,7 @@ jobs:
       - name: Push image to GitHub Container Registry
         if: ${{ inputs.push }}
         run: |
-          IMAGE_ID=${{ inputs.registry }}/${{ inputs.image_name }}
+          IMAGE_ID=${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image_name }}
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')

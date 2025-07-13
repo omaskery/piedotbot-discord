@@ -12,6 +12,10 @@ on:
         description: The container registry to pull from
         required: true
         type: string
+      registry_namespace:
+        description: The container registry namespace to push to
+        required: true
+        type: string
       image_name:
         description: The name of the container image to use
         required: true
@@ -46,4 +50,4 @@ jobs:
           manifests: |
             ./deployments/k8s/piedotbot-deployment.yaml
           images: |
-            ${{ inputs.registry }}/${{ inputs.image }}:${{ github.sha }}
+            ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image }}:${{ github.sha }}
