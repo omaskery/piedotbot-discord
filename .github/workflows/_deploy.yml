@@ -44,4 +44,4 @@ jobs:
           namespace: oliver
           manifests: |
             ./deployments/k8s/piedotbot-deployment.yaml
-          images: ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image }}:${{ github.sha }}
+          images: ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image_name }}:${{ github.sha }}
