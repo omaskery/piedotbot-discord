@@ -1,13 +1,9 @@
-name: Deploy main branch to $ENVIRONMENT
-run-name: Deploy main to $ENVIRONMENT
+name: Deploy main branch to production
 
 on:
   push:
     branches:
       - main
-
-env:
-  ENVIRONMENT: production
 
 jobs:
   push:
@@ -32,4 +28,4 @@ jobs:
       registry: ${{ vars.REGISTRY }}
       registry_namespace: ${{ vars.REGISTRY_NAMESPACE }}
       image_name: ${{ vars.IMAGE_NAME }}
-      environment: $ENVIRONMENT
+      environment: production

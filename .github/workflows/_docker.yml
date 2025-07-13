@@ -28,6 +28,17 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Set up Docker
+        uses: docker/setup-docker-action@b60f85385d03ac8acfca6d9996982511d8620a19
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
