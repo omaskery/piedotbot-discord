@@ -7,6 +7,12 @@ on:
 
 jobs:
   push:
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
     uses: ./.github/workflows/_docker.yml
     with:
       registry: ${{ vars.REGISTRY }}
