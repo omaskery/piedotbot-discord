@@ -29,3 +29,4 @@ jobs:
       registry_namespace: ${{ vars.REGISTRY_NAMESPACE }}
       image_name: ${{ vars.IMAGE_NAME }}
       environment: production
+    secrets: inherit
