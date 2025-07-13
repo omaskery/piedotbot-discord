@@ -2,9 +2,9 @@ name: Docker
 
 on:
   push:
-    # Publish `master` as Docker `latest` image.
+    # Publish `main` as Docker `latest` image.
     branches:
-      - master
+      - main
 
     # Publish `v1.2.3` tags as releases.
     tags:
@@ -92,7 +92,6 @@ jobs:
         with:
           namespace: oliver
           manifests: |
-            ./deployments/k8s/piedotbot-redis.yaml
             ./deployments/k8s/piedotbot-deployment.yaml
           images: |
             ghcr.io/omaskery/piedotbot:${{ github.sha }}
