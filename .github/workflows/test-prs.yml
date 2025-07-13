@@ -3,15 +3,10 @@ name: Build and Test
 on:
   pull_request:
 
-env:
-  REGISTRY: ghcr.io/${{ github.repository_owner }}
-  IMAGE_NAME: piedotbot
-  ENVIRONMENT: production
-
 jobs:
   test:
     uses: ./.github/workflows/_docker.yml
     with:
-      registry: ${{ env.REGISTRY }}
-      image_name: ${{ env.IMAGE_NAME }}
+      registry: ${{ vars.REGISTRY }}
+      image_name: ${{ vars.IMAGE_NAME }}
       push: false

@@ -5,17 +5,12 @@ on:
     branches:
       - main
 
-env:
-  REGISTRY: ghcr.io/${{ github.repository_owner }}
-  IMAGE_NAME: piedotbot
-  ENVIRONMENT: production
-
 jobs:
   push:
     uses: ./.github/workflows/_docker.yml
     with:
-      registry: ${{ env.REGISTRY }}
-      image_name: ${{ env.IMAGE_NAME }}
+      registry: ${{ vars.REGISTRY }}
+      image_name: ${{ vars.IMAGE_NAME }}
       push: true
 
   deploy:
@@ -23,6 +18,6 @@ jobs:
 
     uses: ./.github/workflows/_deploy.yml
     with:
-      registry: ${{ env.REGISTRY }}
-      image_name: ${{ env.IMAGE_NAME }}
-      environment: ${{ env.ENVIRONMENT }}
+      registry: ${{ vars.REGISTRY }}
+      image_name: ${{ vars.IMAGE_NAME }}
+      environment: ${{ vars.ENVIRONMENT }}
