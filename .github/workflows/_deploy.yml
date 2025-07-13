@@ -33,7 +33,7 @@ jobs:
 
       - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede
         with:
-          version: '1.21.14'
+          version: 'v1.21.14'
 
       - name: Set Kubernetes context
         uses: Azure/k8s-set-context@212a19233d93f03eceaac31ae5a1d1acf650b6ef
