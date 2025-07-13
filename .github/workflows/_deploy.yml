@@ -31,17 +31,22 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede
+        with:
+          version: '1.21'
+
       - name: Set Kubernetes context
-        uses: azure/k8s-set-context@212a19233d93f03eceaac31ae5a1d1acf650b6ef
+        uses: Azure/k8s-set-context@212a19233d93f03eceaac31ae5a1d1acf650b6ef
         with:
           method: service-account
           k8s-url: ${{ secrets.K8S_API_ADDR }}
           k8s-secret: ${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}
 
       - name: Apply Kubernetes manifests
-        uses: azure/k8s-deploy@b0f33712c6b266c3ddd7e96416fcc7a7837d98dc
+        uses: Azure/k8s-deploy@b0f33712c6b266c3ddd7e96416fcc7a7837d98dc
         with:
           namespace: oliver
           manifests: |
             ./deployments/k8s/piedotbot-deployment.yaml
-          images: ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image_name }}:${{ github.sha }}
+          images: |
+            ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image_name }}:${{ github.sha }}
