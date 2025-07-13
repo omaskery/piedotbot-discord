@@ -1,0 +1,49 @@
+name: Deploy
+run-name: Deploy to ${{ inputs.environment }} by @{{ github.actor }}
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The environment to deploy to
+        required: true
+        type: string
+      registry:
+        description: The container registry to pull from
+        required: true
+        type: string
+      image_name:
+        description: The name of the container image to use
+        required: true
+        type: string
+
+concurrency: ${{ inputs.environment }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v3.4.0
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Kubernetes context
+        uses: Azure/k8s-set-context@v4.0.1
+        with:
+          method: service-account
+          k8s-url: "${{ secrets.K8S_API_ADDR }}"
+          k8s-secret: "${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}"
+
+      - name: Apply Kubernetes manifests
+        uses: Azure/k8s-deploy@v5.0.3
+        with:
+          namespace: oliver
+          manifests: |
+            ./deployments/k8s/piedotbot-deployment.yaml
+          images: |
+            ${{ inputs.registry }}/${{ inputs.image }}:${{ github.sha }}

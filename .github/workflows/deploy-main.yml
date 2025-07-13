@@ -1,0 +1,28 @@
+name: Deploy main branch to production
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_NAME: piedotbot
+  ENVIRONMENT: production
+
+jobs:
+  push:
+    uses: ./.github/workflows/_docker.yml
+    with:
+      registry: ${{ env.REGISTRY }}
+      image_name: ${{ env.IMAGE_NAME }}
+      push: true
+
+  deploy:
+    needs: push
+
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      registry: ${{ env.REGISTRY }}
+      image_name: ${{ env.IMAGE_NAME }}
+      environment: ${{ env.ENVIRONMENT }}
