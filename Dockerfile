@@ -1,8 +1,8 @@
 FROM golang:1.24 AS build
 
-ENV CGO_ENABLED 0
-ENV GOOS linux
-ENV GOPATH /go
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOPATH=/go
 
 COPY . /src
 WORKDIR /src

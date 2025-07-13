@@ -35,8 +35,8 @@ jobs:
         uses: azure/k8s-set-context@212a19233d93f03eceaac31ae5a1d1acf650b6ef
         with:
           method: service-account
-          k8s-url: "${{ secrets.K8S_API_ADDR }}"
-          k8s-secret: "${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}"
+          k8s-url: ${{ secrets.K8S_API_ADDR }}
+          k8s-secret: ${{ secrets.K8S_GITHUB_ACTIONS_SVC_ACCT_TOKEN }}
 
       - name: Apply Kubernetes manifests
         uses: azure/k8s-deploy@b0f33712c6b266c3ddd7e96416fcc7a7837d98dc
@@ -44,5 +44,4 @@ jobs:
           namespace: oliver
           manifests: |
             ./deployments/k8s/piedotbot-deployment.yaml
-          images: |
-            ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image }}:${{ github.sha }}
+          images: ${{ inputs.registry }}/${{ inputs.registry_namespace }}/${{ inputs.image }}:${{ github.sha }}
