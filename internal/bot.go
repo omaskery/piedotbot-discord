@@ -174,10 +174,10 @@ func (b *Bot) Start(ctx context.Context) error {
 	b.addSessionHandler(wrapHandlerWithCtx[discordgo.Connect](ctx, 1*time.Second, b.connectedHandler))
 	b.addSessionHandler(wrapHandlerWithCtx[discordgo.Disconnect](ctx, 1*time.Second, b.disconnectedHandler))
 	b.addSessionHandler(wrapHandlerWithCtx[discordgo.RateLimit](ctx, 1*time.Second, b.rateLimitedHandler))
-	b.addSessionHandler(wrapHandlerWithCtx[discordgo.GuildMemberUpdate](ctx, 3*time.Second, b.guildMemberUpdatedHandler))
-	b.addSessionHandler(wrapHandlerWithCtx[discordgo.ChannelUpdate](ctx, 3*time.Second, b.channelUpdatedHandler))
-	b.addSessionHandler(wrapHandlerWithCtx[discordgo.MessageCreate](ctx, 3*time.Second, b.messageCreatedHandler))
-	b.addSessionHandler(wrapHandlerWithCtx[discordgo.VoiceStateUpdate](ctx, 1*time.Second, b.voiceStateUpdatedHandler))
+	b.addSessionHandler(wrapHandlerWithCtx[discordgo.GuildMemberUpdate](ctx, 5*time.Second, b.guildMemberUpdatedHandler))
+	b.addSessionHandler(wrapHandlerWithCtx[discordgo.ChannelUpdate](ctx, 5*time.Second, b.channelUpdatedHandler))
+	b.addSessionHandler(wrapHandlerWithCtx[discordgo.MessageCreate](ctx, 5*time.Second, b.messageCreatedHandler))
+	b.addSessionHandler(wrapHandlerWithCtx[discordgo.VoiceStateUpdate](ctx, 5*time.Second, b.voiceStateUpdatedHandler))
 
 	// Configure the types of events we want
 	b.session.Identify.Intents = discordgo.MakeIntent(
