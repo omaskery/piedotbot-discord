@@ -48,7 +48,7 @@ func (a *Activity) VoiceStateUpdated(ctx context.Context, logger *slog.Logger, u
 	newChannelID := getChannelID(newChannel)
 
 	var prevChannel *internal.ChannelInfo
-	if tracked.voiceState != nil {
+	if tracked.voiceState != nil && tracked.voiceState.Channel != nil {
 		prevChannelID := tracked.voiceState.Channel.ID
 		prevChannel, _ = a.reader.GetChannelInfo(ctx, prevChannelID)
 	}
