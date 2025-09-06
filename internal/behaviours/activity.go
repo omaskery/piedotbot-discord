@@ -4,14 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/omaskery/piedotbot-discord/internal"
+	"github.com/omaskery/piedotbot-discord/internal/cache"
 )
 
 var (
 	ErrNoActivityLogChannel = errors.New("no activity log channel")
+)
+
+const (
+	TrackingOptInRoleName = "Tracked"
 )
 
 type trackedUserState struct {
@@ -23,6 +30,7 @@ type Activity struct {
 	responder     Responder
 	logChannelIds map[string]string
 	tracked       map[string]*trackedUserState
+	optedIn       *cache.TtlCache[string, bool]
 }
 
 func NewActivityTracker(reader DiscordReader, responder Responder) *Activity {
@@ -31,11 +39,45 @@ func NewActivityTracker(reader DiscordReader, responder Responder) *Activity {
 		responder:     responder,
 		logChannelIds: map[string]string{},
 		tracked:       map[string]*trackedUserState{},
+		optedIn:       cache.NewTtlCache[string, bool](5 * time.Second),
 	}
 }
 
+func guildTrackingRoleID(guild *internal.GuildInfo) string {
+	if guild == nil {
+		return ""
+	}
+
+	for roleID, role := range guild.Roles {
+		if role.Name == TrackingOptInRoleName {
+			return roleID
+		}
+	}
+
+	return ""
+}
+
 func (a *Activity) VoiceStateUpdated(ctx context.Context, logger *slog.Logger, update *internal.VoiceStateUpdate) error {
-	tracked := a.trackUser(update.User.ID)
+	user, _ := a.reader.GetUserInfo(ctx, update.User.ID, update.Guild.ID)
+	guild, _ := a.reader.GetGuildInfo(ctx, update.Guild.ID)
+
+	optInKey := fmt.Sprintf("%s\000%s", guild.ID, user.ID)
+	optedIn, _ := a.optedIn.Get(optInKey, func() (bool, error) {
+		optedIn := false
+		if trackingRoleID := guildTrackingRoleID(guild); trackingRoleID != "" {
+			optedIn = slices.Contains(user.GetRoles(guild.ID), trackingRoleID)
+			if optedIn {
+				logger.InfoContext(ctx, "user is opted into tracking")
+			}
+		}
+		return optedIn, nil
+	})
+	if !optedIn {
+		logger.DebugContext(ctx, "ignoring voice state change from opted-out user")
+		return nil
+	}
+
+	tracked := a.trackUser(user.ID)
 
 	getChannelID := func(c *internal.ChannelInfo) string {
 		if c == nil {
@@ -60,7 +102,6 @@ func (a *Activity) VoiceStateUpdated(ctx context.Context, logger *slog.Logger, u
 		return nil
 	}
 
-	user, _ := a.reader.GetUserInfo(ctx, update.User.ID)
 	userDisplayName := user.DisplayName(update.Guild.ID)
 
 	message := ""

@@ -4,16 +4,26 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"reflect"
-	"strings"
+	"slices"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/omaskery/piedotbot-discord/internal/cache"
 )
 
-type GuildInfo struct {
-	ID   string
+const defaultTtl = time.Second * 5
+
+type RoleInfo struct {
 	Name string
+}
+
+type GuildInfo struct {
+	ID    string
+	Name  string
+	Roles map[string]*RoleInfo
 }
 
 func (gi *GuildInfo) GetID() string {
@@ -36,11 +46,16 @@ func (gi *GuildInfo) AsSlogGroup() slog.Value {
 		slog.String("name", gi.GetName()))
 }
 
+type MemberInfo struct {
+	Nickname string
+	Roles    map[string]struct{}
+}
+
 type UserInfo struct {
-	ID         string
-	Username   string
-	GlobalName string
-	Nicknames  map[string]string
+	ID              string
+	Username        string
+	GlobalName      string
+	GuildMembership map[string]*MemberInfo
 }
 
 func (ui *UserInfo) GetID() string {
@@ -64,16 +79,9 @@ func (ui *UserInfo) GetGlobalName() string {
 	return ui.GlobalName
 }
 
-func (ui *UserInfo) GetNicknames() map[string]string {
-	if ui == nil {
-		return nil
-	}
-	return ui.Nicknames
-}
-
 func (ui *UserInfo) DisplayName(guildID string) string {
-	if nickname := ui.Nicknames[guildID]; nickname != "" {
-		return nickname
+	if member := ui.GuildMembership[guildID]; member != nil && member.Nickname != "" {
+		return member.Nickname
 	}
 
 	if ui.GlobalName != "" {
@@ -88,6 +96,19 @@ func (ui *UserInfo) AsSlogGroup(guildID string) slog.Value {
 		slog.String("id", guildID),
 		slog.String("username", ui.Username),
 		slog.String("display-name", ui.DisplayName(guildID)))
+}
+
+func (ui *UserInfo) GetRoles(guildID string) []string {
+	if ui == nil {
+		return nil
+	}
+
+	membership := ui.GuildMembership[guildID]
+	if membership == nil {
+		return nil
+	}
+
+	return slices.Collect(maps.Keys(membership.Roles))
 }
 
 type MessageCreated struct {
@@ -142,9 +163,9 @@ type Bot struct {
 	logger           *slog.Logger
 	session          *discordgo.Session
 	listeners        map[string]Listener
-	channelCache     map[string]*ChannelInfo
-	userCache        map[string]*UserInfo
-	guildCache       map[string]*GuildInfo
+	channelCache     *cache.TtlCache[string, *ChannelInfo]
+	userCache        *cache.TtlCache[string, *UserInfo]
+	guildCache       *cache.TtlCache[string, *GuildInfo]
 	handlerRemoveFns []func()
 }
 
@@ -159,9 +180,9 @@ func NewBot(logger *slog.Logger, token string) (*Bot, error) {
 		logger:       logger,
 		session:      session,
 		listeners:    make(map[string]Listener),
-		channelCache: make(map[string]*ChannelInfo),
-		userCache:    make(map[string]*UserInfo),
-		guildCache:   make(map[string]*GuildInfo),
+		channelCache: cache.NewTtlCache[string, *ChannelInfo](defaultTtl),
+		userCache:    cache.NewTtlCache[string, *UserInfo](defaultTtl),
+		guildCache:   cache.NewTtlCache[string, *GuildInfo](defaultTtl),
 	}
 
 	return b, nil
@@ -222,27 +243,31 @@ func (b *Bot) GetGuildInfo(ctx context.Context, id string) (*GuildInfo, error) {
 		return nil, nil
 	}
 
-	if cached := b.guildCache[id]; cached != nil {
-		return cached, nil
-	}
-
-	b.logger.InfoContext(ctx, "fetching guild info", "guild-id", id)
-	guild, err := b.session.Guild(id)
-	if err != nil {
-		b.logger.ErrorContext(ctx, "failed to retrieve guild info", "guild-id", id, "err", err)
-		g := &GuildInfo{
-			ID: id,
+	return b.guildCache.Get(id, func() (*GuildInfo, error) {
+		b.logger.InfoContext(ctx, "fetching guild info", "guild-id", id)
+		guild, err := b.session.Guild(id)
+		if err != nil {
+			b.logger.ErrorContext(ctx, "failed to retrieve guild info", "guild-id", id, "err", err)
+			g := &GuildInfo{
+				ID: id,
+			}
+			return g, fmt.Errorf("getting guild info: %w", err)
 		}
-		return g, fmt.Errorf("getting guild info: %w", err)
-	}
 
-	info := &GuildInfo{
-		ID:   guild.ID,
-		Name: guild.Name,
-	}
-	b.guildCache[id] = info
+		info := &GuildInfo{
+			ID:    guild.ID,
+			Name:  guild.Name,
+			Roles: map[string]*RoleInfo{},
+		}
 
-	return info, nil
+		for _, r := range guild.Roles {
+			info.Roles[r.ID] = &RoleInfo{
+				Name: r.Name,
+			}
+		}
+
+		return info, nil
+	})
 }
 
 func (b *Bot) GetChannels(ctx context.Context, guildID string) ([]ChannelInfo, error) {
@@ -262,61 +287,75 @@ func (b *Bot) GetChannels(ctx context.Context, guildID string) ([]ChannelInfo, e
 	return channels, nil
 }
 
-func (b *Bot) GetChannelInfo(ctx context.Context, id string) (*ChannelInfo, error) {
-	if id == "" {
+func (b *Bot) GetChannelInfo(ctx context.Context, channelID string) (*ChannelInfo, error) {
+	if channelID == "" {
 		return nil, nil
 	}
 
-	if cached := b.channelCache[id]; cached != nil {
-		return cached, nil
-	}
-
-	b.logger.InfoContext(ctx, "fetching channel info", "channel-id", id)
-	channel, err := b.session.Channel(id)
-	if err != nil {
-		b.logger.ErrorContext(ctx, "failed to retrieve channel info", "channel-id", id, "err", err)
-		c := &ChannelInfo{
-			ID: id,
+	return b.channelCache.Get(channelID, func() (*ChannelInfo, error) {
+		b.logger.InfoContext(ctx, "fetching channel info", "channel-id", channelID)
+		channel, err := b.session.Channel(channelID)
+		if err != nil {
+			b.logger.ErrorContext(ctx, "failed to retrieve channel info", "channel-id", channelID, "err", err)
+			c := &ChannelInfo{
+				ID: channelID,
+			}
+			return c, fmt.Errorf("getting channel info: %w", err)
 		}
-		return c, fmt.Errorf("getting channel info: %w", err)
-	}
 
-	info := &ChannelInfo{
-		ID:   channel.ID,
-		Name: channel.Name,
-	}
-	b.channelCache[id] = info
+		info := &ChannelInfo{
+			ID:   channel.ID,
+			Name: channel.Name,
+		}
 
-	return info, nil
+		return info, nil
+	})
 }
 
-func (b *Bot) GetUserInfo(ctx context.Context, id string) (*UserInfo, error) {
-	if id == "" {
+func (b *Bot) GetUserInfo(ctx context.Context, userID, guildID string) (*UserInfo, error) {
+	if userID == "" {
 		return nil, nil
 	}
 
-	if cached := b.userCache[id]; cached != nil {
-		return cached, nil
-	}
-
-	b.logger.InfoContext(ctx, "fetching user info", "user-id", id)
-	user, err := b.session.User(id)
-	if err != nil {
-		b.logger.ErrorContext(ctx, "failed to retrieve user info", "user-id", id, "err", err)
-		u := &UserInfo{
-			ID: id,
+	return b.userCache.Get(userID, func() (*UserInfo, error) {
+		b.logger.InfoContext(ctx, "fetching user info", "user-id", userID)
+		user, err := b.session.User(userID)
+		if err != nil {
+			b.logger.ErrorContext(ctx, "failed to retrieve user info", "user-id", userID, "err", err)
+			u := &UserInfo{
+				ID: userID,
+			}
+			return u, fmt.Errorf("getting user info: %w", err)
 		}
-		return u, fmt.Errorf("getting user info: %w", err)
-	}
 
-	info := &UserInfo{
-		ID:         user.ID,
-		Username:   user.Username,
-		GlobalName: user.GlobalName,
-	}
-	b.userCache[id] = info
+		info := &UserInfo{
+			ID:         user.ID,
+			Username:   user.Username,
+			GlobalName: user.GlobalName,
+		}
 
-	return info, nil
+		if guildID != "" {
+			member, err := b.session.GuildMember(guildID, userID)
+			if err != nil {
+				b.logger.ErrorContext(ctx, "failed to retrieve user guild member info", "user-id", userID, "guild-id", guildID, "err", err)
+				return info, fmt.Errorf("getting user guild member info: %w", err)
+			}
+
+			roles := make(map[string]struct{}, len(member.Roles))
+			for _, roleID := range member.Roles {
+				roles[roleID] = struct{}{}
+			}
+
+			info.GuildMembership = map[string]*MemberInfo{
+				guildID: {
+					Nickname: member.Nick,
+					Roles:    roles,
+				},
+			}
+		}
+
+		return info, nil
+	})
 }
 
 func (b *Bot) connectedHandler(ctx context.Context, _ *discordgo.Connect) {
@@ -332,56 +371,21 @@ func (b *Bot) rateLimitedHandler(ctx context.Context, msg *discordgo.RateLimit) 
 }
 
 func (b *Bot) guildMemberUpdatedHandler(ctx context.Context, msg *discordgo.GuildMemberUpdate) {
-	info := &UserInfo{
-		ID:         msg.User.ID,
-		Username:   msg.User.Username,
-		GlobalName: msg.User.GlobalName,
+	b.userCache.Clear(msg.User.ID)
+	if _, err := b.GetUserInfo(ctx, msg.User.ID, msg.GuildID); err != nil {
+		b.logger.ErrorContext(ctx, "failed to update cached user info", "err", err, "guild-id", msg.GuildID, "user-id", msg.User.ID)
 	}
-	if msg.Member != nil {
-		info.Nicknames = map[string]string{
-			msg.GuildID: msg.Member.Nick,
-		}
-	}
-
-	changes := b.updateCachedUserInfo(ctx, info)
-	if len(changes) <= 0 {
-		return
-	}
-
-	guild, _ := b.GetGuildInfo(ctx, msg.GuildID)
-
-	b.logger.InfoContext(
-		ctx, "guild member updated",
-		"guild", guild.AsSlogGroup(),
-		"user", info.AsSlogGroup(msg.GuildID),
-		"changes", changes.String(),
-	)
 }
 
 func (b *Bot) channelUpdatedHandler(ctx context.Context, msg *discordgo.ChannelUpdate) {
-	info := &ChannelInfo{
-		ID:   msg.ID,
-		Name: msg.Name,
+	b.channelCache.Clear(msg.Channel.ID)
+	if _, err := b.GetChannelInfo(ctx, msg.Channel.ID); err != nil {
+		b.logger.ErrorContext(ctx, "failed to update cached channel info", "err", err, "channel-id", msg.Channel.ID, "guild-id", msg.GuildID)
 	}
-
-	changes := b.updateCachedChannelInfo(info)
-	if len(changes) <= 0 {
-		return
-	}
-
-	guild, _ := b.GetGuildInfo(ctx, msg.GuildID)
-
-	b.logger.InfoContext(
-		ctx, "channel updated",
-		"guild", guild.AsSlogGroup(),
-		"channel", info.AsSlogGroup(),
-		"changes", changes.String(),
-	)
 }
 
-// Called when a message is created in a channel bot can see
 func (b *Bot) messageCreatedHandler(ctx context.Context, msg *discordgo.MessageCreate) {
-	author, _ := b.GetUserInfo(ctx, msg.Author.ID)
+	author, _ := b.GetUserInfo(ctx, msg.Author.ID, msg.GuildID)
 	guild, _ := b.GetGuildInfo(ctx, msg.GuildID)
 	channel, _ := b.GetChannelInfo(ctx, msg.ChannelID)
 
@@ -417,7 +421,7 @@ func (b *Bot) messageCreatedHandler(ctx context.Context, msg *discordgo.MessageC
 func (b *Bot) voiceStateUpdatedHandler(ctx context.Context, update *discordgo.VoiceStateUpdate) {
 	guild, _ := b.GetGuildInfo(ctx, update.GuildID)
 	channel, _ := b.GetChannelInfo(ctx, update.ChannelID)
-	user, _ := b.GetUserInfo(ctx, update.UserID)
+	user, _ := b.GetUserInfo(ctx, update.UserID, update.GuildID)
 
 	logger := b.logger.With(
 		slog.Group("update",
@@ -460,111 +464,6 @@ func (b *Bot) addSessionHandler(handler any) {
 	b.logger.Debug("adding session handler", "handler-type", reflect.TypeOf(handler))
 	removeFn := b.session.AddHandler(handler)
 	b.handlerRemoveFns = append(b.handlerRemoveFns, removeFn)
-}
-
-type cacheChange struct {
-	property string
-	old      any
-	new      any
-}
-
-type cacheChanges []cacheChange
-
-func (c *cacheChanges) add(change cacheChange) {
-	*c = append(*c, change)
-}
-
-func (c *cacheChanges) String() string {
-	builder := strings.Builder{}
-	builder.WriteByte('[')
-	for idx, change := range *c {
-		if idx > 0 {
-			builder.WriteString(", ")
-		}
-		builder.WriteString(fmt.Sprintf("%q (%v -> %v)", change.property, change.old, change.new))
-	}
-	builder.WriteByte(']')
-	return builder.String()
-}
-
-func updateCachedProperty[T comparable](cached *T, current T, name string, f func(cacheChange)) {
-	if *cached == current {
-		return
-	}
-
-	f(cacheChange{
-		property: name,
-		old:      *cached,
-		new:      current,
-	})
-}
-
-func updateCachedMapProperty[K, V comparable](cachedMap map[K]V, currentMap map[K]V, name string, f func(K, cacheChange)) {
-	var zero V
-	for key, current := range currentMap {
-		isDelete := current == zero
-
-		cached, ok := cachedMap[key]
-		if ok && isDelete {
-			f(key, cacheChange{
-				property: name,
-				old:      cached,
-				new:      current,
-			})
-			delete(cachedMap, key)
-			continue
-		}
-
-		if ok && cached == current {
-			return
-		}
-
-		f(key, cacheChange{
-			property: name,
-			old:      cached,
-			new:      current,
-		})
-	}
-}
-
-func (b *Bot) updateCachedChannelInfo(info *ChannelInfo) cacheChanges {
-	cached := b.channelCache[info.ID]
-	if cached == nil {
-		cached = &ChannelInfo{
-			ID: info.ID,
-		}
-		b.channelCache[info.ID] = cached
-	}
-
-	var changes cacheChanges
-	updateCachedProperty(&cached.Name, info.Name, "name", changes.add)
-
-	return changes
-}
-
-func (b *Bot) updateCachedUserInfo(ctx context.Context, info *UserInfo) cacheChanges {
-	cached := b.userCache[info.ID]
-	if cached == nil {
-		cached = &UserInfo{
-			ID: info.ID,
-		}
-		b.userCache[info.ID] = cached
-	}
-
-	var guildInfo *GuildInfo
-
-	var changes cacheChanges
-	updateCachedProperty(&cached.Username, info.Username, "username", changes.add)
-	updateCachedProperty(&cached.GlobalName, info.GlobalName, "global-name", changes.add)
-	updateCachedMapProperty(cached.Nicknames, info.Nicknames, "nicknames", func(guildID string, change cacheChange) {
-		if guildInfo == nil || guildInfo.ID != guildID {
-			guildInfo, _ = b.GetGuildInfo(ctx, guildID)
-		}
-		change.property = fmt.Sprintf("nickname in guild %q (%q)", guildInfo.Name, guildInfo.ID)
-		changes.add(change)
-	})
-
-	return changes
 }
 
 type handler[T any] func(ctx context.Context, msg *T)
